@@ -32,6 +32,8 @@ Some notes:
 
 ## Charting with `ggplot2`
 
+### The grammar of graphics
+
 Recall that the `ggplot2` package uses the grammar of graphics to create charts. It's a little bit 'wordy' - i.e. you tend to have to write a reasonable amount of code to get a chart, but it is very consistent, and once past very simple charts is very powerful. Just about everything about the chart can be tweaked.
 
 We start with a simple scatter plot of the `penguins` data:
@@ -45,22 +47,51 @@ ggplot(data = penguins) +
 ```
 
 Recall that the recipe for a `ggplot` chart is:
+
 1. Use `ggplot` to create an empty chart.
 2. Assign some data to it via the `data` argument to `ggplot`. We've used the `penguins` data.
 3. Choose a geometry layer, in this case `geom_point` for points.
 4. Map the aesthetics (a mapping from features of the chart to columns in our data). In this case we've mapped the `x` axis to `flipper_length_mm` and the `y` axis to `body_mass_g`.
 
-Notice that we've named all the parameters (`data`, `mapping`, `x`, `y`) that we're passing to the functions (`ggplot`, `geom_point`, `aes`). This is just style - we could have just as easily used `ggplot(penguins) + geom_point(aes(flipper_length_mm,body_mass_g))` as in each case the named parameter is just the first (or in the case of `y` the second) argument to each of the functions. We recommend you name parameters rather than not: While it takes more typing (you can use tab-complete, i.e. type first few characters, press TAB, to speed it up) it allows your code to be self-documenting. While I always remember that the first argument to `ggplot()` is `data` and the first to `geom_point()` is `mapping`, I don't always remember that the second argument to `aes` is `y` - and I have no idea what the 3rd argument is!
+Notice that we've named all the arguments (`data`, `mapping`, `x`, `y`) that we're passing to the functions (`ggplot`, `geom_point`, `aes`), but we don't have to. 
 
-### Try yourself
+Instead of explicitly naming all the arguments like this:
 
-1. Try adding `colour = 'purple'` as an additional argument to `geom_point`, after the mapping argument.
-2. Try adding `colour = 'purple'` as an additional argument to `aes` inside `geom_point`. Which is the appropriate spot for colours points purple? This is **setting** an aesthetic.
+```{r eval=FALSE}
+ggplot(data = penguins) +
+  geom_point(
+    mapping = aes(x = flipper_length_mm,
+                  y = body_mass_g)
+    )
+```
+
+... we can get the equivalent plot without naming the arguments, like this:
+
+```{r eval=FALSE}
+ggplot(penguins) +
+  geom_point(aes(flipper_length_mm,body_mass_g))
+```
+
+We can omit the names of the arguments, but only if they're given in the correct order that they appear in the function. That is, we can omit `data =` in the `ggplot()` function because `data` is the first argument for `ggplot()`. Likewise, for the `aes()` function, the first argument is `x` and the second argument is `y`. 
+
+```{r}
+args(ggplot)
+args(aes)
+```
+
+We recommend you name parameters rather than not: While it takes more typing (you can use tab-complete, i.e. type first few characters, press TAB, to speed it up) it allows your code to be self-documenting. While I always remember that the first argument to `ggplot()` is `data` and the first to `geom_point()` is `mapping`, I don't always remember that the second argument to `aes` is `y` - and I have no idea what the 3rd argument is!
+
+### Try it yourself
+
+1. Try adding `colour = 'purple'` as an additional argument to `geom_point`, after the `mapping` argument.
+2. Try adding `colour = 'purple'` as an additional argument to `aes` inside `geom_point`. Which is the appropriate spot to specify the points should be purple? This is **setting** an aesthetic.
 3. Try mapping the `colour` aesthetic to the `species` column of the `penguins` data.
+
+### Overlapping points
 
 You should have noticed that the values in the `flipper_length_mm` and `body_mass_g` are rounded, so that the points appear to be uniformly spaced in some instances. Indeed, it is feasible that there are pairs of points in the data that are identical, so that the points might be placed directly on top of each other. We can't tell in this plot if this is the case or not, as there is no depth to the chart.
 
-There is two potential ways to fix this:
+There are two potential ways to fix this:
 
 1. Adding some *jitter* via using `geom_jitter`. This adds some random noise to the x or y values before plotting so we can tell if there is multiple points close to each other.
 
@@ -68,10 +99,12 @@ There is two potential ways to fix this:
 
 Both of these methods will allow the *ink density* to reveal where there is more data - areas with more points will appear darker than areas with fewer points.
 
-### Try yourself
+### Try it yourself
 
 1. Implement each of the above methods to assess whether they help in this case.
 2. You could try both at once, or try altering the amount of jitter (see the help for `geom_jitter`, or Google!)
+
+### Multiple layers (`geoms`)
 
 In the example above we used just one layer, `geom_point`, but we can add multiple layers if we like. e.g.
 
@@ -84,14 +117,15 @@ ggplot(data = penguins) +
 Note the repetition here in that the `mapping` is defined twice. We can simplify this by noting that the `ggplot` function also has a `mapping` argument, and any layer without one will inherit this mapping, simplifying the code to:
 
 ```{r}
-ggplot(data = penguins, mapping = aes(x = flipper_length_mm, y = body_mass_g)) +
+ggplot(data = penguins, 
+       mapping = aes(x = flipper_length_mm, y = body_mass_g)) +
   geom_point() +
   geom_smooth()
 ```
 
-Ofcourse, we can override the mapping if we like, e.g. to map `colour` to `species`.
+Of course, we can override the mapping if we like, e.g. to map `colour` to `species`.
 
-### Try yourself
+### Try it yourself
 
 1. Add a `mapping` argument to `geom_point()` in the code above to map the colour of points to species.
 2. Alternatively, modify the `aes()` function in the `ggplot` bit to map the colour of points and the smooth to species.
@@ -99,15 +133,16 @@ Ofcourse, we can override the mapping if we like, e.g. to map `colour` to `speci
 Recall that for one-dimensional summaries we can use histograms or density plots, e.g.
 
 ```{r}
-ggplot(data = penguins, mapping = aes(x = flipper_length_mm)) +
+ggplot(data = penguins, 
+       mapping = aes(x = flipper_length_mm)) +
   geom_histogram()
 ```
 
 Obviously the histogram doesn't require the `y` aesthetic to be mapped, as it is computed by the histogram.
 
-### Try yourself
+### Try it yourself
 
-1. Modify the above to use `geom_density()` instead.
+1. Modify the above to use `geom_density()` instead of `geom_histogram()`.
 2. Try mapping `colour` or `fill` to species of the density and histogram. You should notice that the histogram stacks (i.e. the second histogram bars start on top of the first), while the densities start at zero.
 3. Try altering the histogram coloured by species so the bars don't stack. Check out the `position` argument to `geom_histogram` for this (Google, or look up help).
 4. Have a play with the `adjust` argument of `geom_density`: Values greater than 1 will result in more smoothing, values less than one less smoothing[^adjust].
@@ -115,13 +150,13 @@ Obviously the histogram doesn't require the `y` aesthetic to be mapped, as it is
 
 Recall that you can label charts using the `labs` command. Remember that the arguments to `labs` are the aesthetics (i.e. `x`, `y`, `colour`, `fill`) in addition to `title`, `subtitle`, `caption`.
 
-### Try yourself
+### Try it yourself
 
 1. Modify some of your above plots to provide better axis labels, a title and perhaps a caption with the data source or with details of who made the plot (you!)
 
 ## Data manipulation with `dplyr`
 
-Recall that `dplyr` is the main package in the `tidyverse` for manipulating data. There are essentially 6 key verbs/functions for you to know about in addition to a bunch of handy shortcuts:
+Recall that `dplyr` is the main package in the `tidyverse` for manipulating data. There are essentially 6 key verbs/functions for you to know about, in addition to a bunch of handy shortcuts:
 
  - `filter`: choose rows based on some criteria.
  - `arrange`: reorder rows based on some criteria.
@@ -141,7 +176,9 @@ roll <- read_csv("http://www.massey.ac.nz/~jcmarsha/data/schools/roll_nomacrons.
 roll
 ```
 
-You should see there are 103,666 rows for 5 different variables (`School`, `Gender`, `EthnicGroup`, `Level`, `Students`)
+You should see there are 103,666 rows for 5 different variables (`School`, `Gender`, `EthnicGroup`, `Level`, `Students`).
+
+### `filter`
 
 We'll start by using `filter` to select rows that satisfy one or more conditions. This is useful for quickly obtaining subsets of interest (indeed, the `subset` command from base R works similarly).
 
@@ -165,11 +202,13 @@ filter(roll, Level == "Year 1" | Level == "Year 2")
 filter(roll, Level %in% c("Year 1", "Year 2"))
 ```
 
-### Try yourself:
+### Try it yourself:
 
 1. Find all rows corresponding to Queen Elizabeth College students in Year 9.
 2. Find all rows where there are more than 100 Year 9 Asian students.
 3. Find all rows where the school name starts with the letter 'G' (hint: you can use School > 'G' for this, but using `str_starts` might be better!)
+
+### `arrange`
 
 You can `arrange` (sort) row output based on the values in each column, and can arrange by more than one column at once. The first column specified will be sorted first, and then all entries that are the same on that column will then be sorted by the second and multiple columns.
 
@@ -180,7 +219,7 @@ arrange(roll, Gender, EthnicGroup, Level)
 arrange(roll, desc(Students))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Arrange the roll rows by number of students.
 2. Find all rows where the ethnicity is Pacific, arranging them by decreasing number of students. (Hint: First filter down to Pacific students, then arrange)
@@ -215,9 +254,9 @@ roll |>
   arrange(desc(Students))
 ```
 
-And be read "Take roll, filter so that EthnicGroup is International fee paying, then filter to Year 13 students and arrange by descending number of students."
+The above code makes the process much clearer: "Take `roll`, filter so that `EthnicGroup` is 'International fee paying', then filter to 'Year 13' students, and arrange by descending number of students."
 
-### Try yourself
+### Try it yourself
 
 1. Try doing a few of the above exercises utilising the pipe instead. i.e. all statements should start `roll |>`.
 
@@ -236,7 +275,7 @@ roll |> select(-School, Number=Students)
 roll |> select(Students, Level, everything())
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Rearrange the `roll` data set so that `Students` and `Level` are first.
 2. Rename the `School` column to `Name` keeping all other columns.
@@ -249,7 +288,7 @@ roll |> mutate(Proportion = Students/sum(Students))
 clean = roll |> mutate(Level = as.numeric(substring(Level, 6)))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Using the `clean` dataset, create a new column combining ethnicgroup and gender with `paste`.
 2. Redo part 1, so that the original two columns are removed.
@@ -263,7 +302,7 @@ clean |> summarise(Rows = n())
 clean |> summarise(Total = sum(Students), Average = Total/n())
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Find the largest (maximum) number of students in any row.
 2. Find the median number of students in a row.
@@ -278,7 +317,7 @@ The idea with `group_by()` is to collect rows together to be treated as a unit u
 clean |> group_by(School) |> summarise(Total = sum(Students))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. How many students of each ethnicity are there?
 2. How many students are there of each gender?
@@ -293,6 +332,7 @@ You probably noticed earlier that when plotting the `penguins` data, `ggplot` in
 ```{r}
 penguins |> summarise(mean_flipper_length = mean(flipper_length_mm))
 ```
+
 Adding `na.rm=TRUE` to the `mean` function will fix this.
 
 Another way that missing values can turn up is where they are **implicitly** missing. e.g. in the `roll` data, there are no `NA` entries at all, however there is missing data. e.g. if we tried to find the average number of each gender across schools, we might try[^grouping]:
@@ -304,13 +344,13 @@ roll |> group_by(Gender, School) |>
   summarise(MeanStudents = mean(Students))
 ```
 
-However, this will be wrong, as there are no entries where the number of students in a category is 0, yet we know ofcourse that some schools will have no students of a particular ethnicity, gender and level combination. e.g. single gender schools.
+However, this will be wrong, as there are no entries where the number of students in a category is 0, yet we know that some schools will have no students of a particular ethnicity, gender, and level combination (e.g. single-gender schools).
 
 ```{r}
 roll |> filter(Students == 0)
 ```
 
-We can see this by totalling up students by school and gender, and then taking a look at some schools:
+We can see this by summing the number of students by school and gender, and then taking a look at some schools:
 
 ```{r}
 roll |> group_by(Gender, School) |>
@@ -332,7 +372,7 @@ roll |> group_by(Gender, School) |>
 
 We can also fill in these missing values, because we know they should be 0.
 
-### Try yourself
+### Try it yourself
 
 1. Add the necessary code above to fill in the `NA` values to be `0`. You can do this using the `fill` parameter of `complete`, or alternatively the `replace_na()` function.
 2. With the `NA` values replaced, recompute the mean number of male and female students across all schools.
