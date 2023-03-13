@@ -3,7 +3,7 @@ title: 'Workshop 3: Missing values and imputation'
 output: html_document
 ---
 
-In this workshop we'll be looking at missing values, how to visualise where they are, and what we might do to impute their values. We'll be using the `nanier` package for missing values and the `simputation` and `VIM` packages for imputation techniques, along with the `skimr` and ackages for quickly summarising data.
+In this workshop we'll be looking at missing values, how to visualise where they are, and what we might do to impute their values. We'll be using the `nanier` package for missing values and the `simputation` and `VIM` packages for imputation techniques, along with `skimr` and other packages for quickly summarising data.
 
 We start by loading the packages and some data.
 
@@ -47,7 +47,7 @@ husbands_na |> skim()
 
 With this we see that the means are now sensible. We also know how many are missing.
 
-### Try yourself
+### Try it yourself
 
 1. Use `skim` to take a look at the `yeast` data. You should notice it uses `999` for missing.
 2. Investigate the function `replace_with_na_all` to replace all the `999`'s with `NA`. Save the result in `yeast_na`.
@@ -100,7 +100,7 @@ ggplot(data = husbands_na) +
 
 Note that the wife's ages that are missing (red) are just given an arbitrary value off the bottom of the plot. From this we can see that there doesn't seem to be any clustering of the red points at any particular husband age. Thus, it seems reasonable that the wife's age might be missing completely at random, and in addition be predictable form the husband's age.
 
-### Try yourself
+### Try it yourself
 
 1. Take a look at the relationship between `H.Age.Marriage` and `W.Age` using the `husbands_na` data. Is the husband's age at marriage useful for predicting the wife's age?
 
@@ -141,7 +141,7 @@ husbands_na |>
 
 We see that this does quite a bit better!
 
-### Try yourself
+### Try it yourself
 
 1. Try altering the $k$ in k-nearest neighbour imputation. e.g. try $k=1$ or $k=100$ and see how they do.
 

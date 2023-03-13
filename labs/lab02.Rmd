@@ -46,7 +46,7 @@ ethnicity_by_gender |>
 
 Notice we have the exact same information, it's just in a more human-readable form. It's not in a form that's easier to plot though! `ggplot` would struggle with these data, as we don't have a single "Count" column for the y-axis to use.
 
-### Try yourself
+### Try it yourself
 
 1. Create a table with total number of male and female students in each year level. (Hint: `group_by` sex and year level then `summarise`. Once done, `pivot_wider` to a table).
 2. Create a table with the number of each ethnic group in each year level.
@@ -89,7 +89,7 @@ ggplot(ethnicity_by_year_by_gender) +
 
 The `vars` helper function here is there so that `facet_wrap` knows to look for the named column in the data frame.
 
-### Try yourself
+### Try it yourself
 
 1. Try altering the above plot so that it uses a different y-axis for each plot. This can be useful when there's differing numbers of students in each group. Hint: see the help for `facet_wrap`.
 2. Instead of colouring by gender, produce separate plots by both `Gender` and `Ethnicity` by supplying both to `facet_wrap`.
@@ -103,7 +103,7 @@ Start by taking a look at the `schools` data:
 schools
 ```
 
-### Try yourself
+### Try it yourself
 
 1. How many schools are there in the Palmerston North Territorial Authority?
 2. Of the schools in Palmerston North, how many are co-ed, single-sex girls or single-sex boys? *You can use `count(SchoolGender)` for this.*
@@ -124,7 +124,7 @@ Notice that the `left_join` function automatically found which column to match o
 
 We can now use the `all_data` dataset to answer questions using the variables from both datasets:
 
-### Try yourself
+### Try it yourself
 
 1. How many students are there in each Regional Council?
 2. How many girls and boys are in schools with a religious affiliation?
@@ -170,38 +170,49 @@ Notice that this is basically junk. All the column types are character, and are 
 imm <- read_excel("immunisation.xlsx", skip=3)
 imm
 ```
-Ok, this is getting somewhere. We have generally got the data we want there, but notice the names aren't that useful, and we have all the ethnicity information which would be useful to have, but we're going to keep things simple and just keep the first 5 columns. We can ofcourse do that with select. In this case, the names to use aren't all that useful, so we might instead use numbers:
+Ok, this is getting somewhere. We have generally got the data we want there, but notice that the names aren't very useful. Also, we have all the ethnicity information, which is useful for some analyses, but we're going to keep things simple and just keep the first 5 columns. We can, of course, do that with `select()`. In this case, the names aren't currently in a nice format, so we'll rename the variables by way of their column numbers.
 
 ```{r}
-imm_cleanish <- imm |> select(Milestone = 1, DHB = 2, Eligible = 3, Immunised = 4, Proportion = 5)
+names(imm)
+
+imm_cleanish <- imm |> 
+  select(Milestone = 1, DHB = 2, Eligible = 3, Immunised = 4, Proportion = 5)
+
 imm_cleanish
 ```
 
 This isn't too bad! Our next step will be to filter some things out. e.g. we don't want the "All milstone Coverage"[^typo] row, and we don't want the "National Total" rows, so let's filter those out. To see how we did, we'll use `count`:
 
 ```{r}
-imm_cleaner <- imm_cleanish |> filter(Milestone != "All Milstone Coverage",
-                               DHB != "National Total")
+imm_cleaner <- imm_cleanish |> 
+  filter(Milestone != "All Milstone Coverage",
+         DHB != "National Total")
+
 imm_cleaner |> count(DHB)
+
 imm_cleaner |> count(Milestone)
 ```
 
-Yay! This is looking really nice now - we have 20 DHBs, each with 7 rows, and 7 milestones each with 20 DHBs. Looks great! One thing we note though is the 'Eligible' column is of type `chr` (short for character) instead of numbers. Let's fix that:
+Yay! This is looking really nice now. We have 20 DHBs, each with 7 rows, and 7 milestones, each with 20 DHBs. Looks great! One thing we note though is the 'Eligible' column is of type `chr` (short for character) instead of numbers. Let's fix that:
 
 ```{r}
-imm_clean <- imm_cleaner |> mutate(Eligible = as.numeric(Eligible))
+imm_clean <- imm_cleaner |> 
+  mutate(Eligible = as.numeric(Eligible))
+
 imm_clean
 ```
 Nice. As a final check, let's see if the Proportion column is correct, by computing it ourselves:
 
 ```{r}
-imm_clean |> mutate(PropCheck = Immunised/Eligible) |>
-  filter(abs(PropCheck - Proportion) > 1e-6)
+imm_clean |> 
+  mutate(PropCheck = Immunised/Eligible) |> # Compute proportion directly
+  mutate(Difference = abs(PropCheck - Proportion)) |> # Calculate difference
+  filter(Difference > 1e-6) # Find any differences > 0 
 ```
 
-Neat - the proportion seems to be accurate. Now we can do some charting.
+After filtering out the columns with a non-zero difference, there are no columns. Neat - the proportion seems to be accurate. Now we can do some charting.
 
-### Try yourself
+### Try it yourself
 
 Your goal is to use the `imm_clean` dataset to produce the plot below:
 
@@ -221,4 +232,4 @@ Some hints:
  - Don't worry about font size as this is display-specific.
 
 [^allthetime]: Almost all the time.
-[^typo]: Real data has typos All. The. Time.
+[^typo]: Real data has typos. All. The. Time.
