@@ -38,80 +38,65 @@ swiss.test <- read_csv("../data/swiss-test.csv") |>
 
 ## Logistic Regression
 
--   LDA, KDA and Naive Bayes classifiers are all generative.
+Linear Discriminant Analysis (LDA), Kernel Discriminant Analysis (KDA) and Naive Bayes are all *generative* classifiers. They model $\mathsf{P}(j|\mathbf{x})$ by first learning $f_j(\mathbf{x})$ and $\pi_j$.
 
-    -   They model $\mathsf{P}(j|\mathbf{x})$ by first learning $f_j(\mathbf{x})$ and $\pi_j$.
+The alternative approach is to model posterior probabilities $\mathsf{P}(j | \mathbf{x})$ directly. Methods that do so are described as *discriminatory* classifiers.
 
--   Alternative is to attempt to learn posterior probabilities
-    $\mathsf{P}(j | \mathbf{x})$ directly.
+One approach is to assume that $\mathsf{P}(j | \mathbf{x})$ takes a particular parametric form, then estimate the parameters from training data.
 
-    -   Gives **discriminatory** classifiers.
-
--   One approach is to assume that $\mathsf{P}(j | \mathbf{x})$ takes a particular
-    parametric form, then estimate parameters from training data.
-
--   **Logistic regression** is one such technique.
+One such technique is **logistic regression**.
 
 ---
 
 ## Introduction to Logistic Regression
 
--   Logistic regression is one of a class of methods known as
-    **generalised linear models** (GLMs).
+Logistic regression is one of a class of methods known as **generalised linear models** (GLMs).     
+GLMs are closely related to linear regression.
 
--   It is closely related to linear regression.
+A critical difference is that the response (target) variable $y$ need not be distributed according to a normal distribution.
 
--   A critical difference is that the response (target) variable $y$
-    need not be distributed according to a normal distribution.
+Logistic regression can be used when the response variable is **binary** (i.e., it has two classes).     
+The two classes, $j = \{1,2\}$, are labelled '0' and '1', respectively. 
 
--   Logistic regression models a **binary** response variable (i.e. two
-    classes), values written as 0 and 1.
+A logistic regression model usually described in terms of $p(\mathbf{x})=\mathsf{P}(y=1 | \mathbf{x})$, where
+- $p(\mathbf{x})$ is a function of predictor variable(s) $\mathbf{x}$, and
+- $\mathsf{P}(y=1 | \mathbf{x})$ is the the probability that the response variable $y$ takes the value $1$ given the value of the predictor variable(s) $\mathbf{x}$.
 
-    -   These can code for classes 1 and 2 respectively in two class
-        problems.
-
--   Model usually described in terms of $p(\mathbf{x}) = \mathsf{P}(y=1 | \mathbf{x})$
-
--   Extensions to more than two classes will come later.
+Later, we can extend this model to more than two classes.
 
 ---
 
 ## Introduction to Logistic Regression
 
--   Want to estimate posterior probability
-    $p(\mathbf{x}) =  \mathsf{P}(y=1 | \mathbf{x}) = \mathsf{P}(j=2 | \mathbf{x})$.
+We want to estimate posterior probability that $y = 1$ (equivalent to $j=2$);      
+that is, $p(\mathbf{x}) =  \mathsf{P}(y=1 | \mathbf{x}) = \mathsf{P}(j=2 | \mathbf{x})$.
 
--   Given that this is a number, why not use linear regression?
+> An aside: beware of possible confusion regarding the notation $p$ between:
+- $p(\mathbf{x}) = \mathsf{P}(y=1 | \mathbf{x}) = \mathsf{P}(j=2 | \mathbf{x})$, and 
+- $p$ as the number of predictors.
 
--   That would give
-    $p(\mathbf{x}) = \beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p$
+Given that this probability is a number, why not just use linear regression?
 
-    -   Aside: beware notational confusion for $p$ between
-        $p(\mathbf{x}) = \mathsf{P}(y=1 | \mathbf{x}) = \mathsf{P}(j=2 | \mathbf{x})$, and $p$ as the number
-        of predictors.
+- A linear regression model would be: $p(\mathbf{x}) = \beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p$
 
--   Problem: linear regression does not respect $[0,1]$ range for
-    probability.
+- A probability must be within the range $[0,1]$.     
+*There's nothing in the linear regression model to confine predictions to this range*.
 
--   E.g. suppose we have single predictor variable, and fitted model is
-    $\hat p(x) = 0.3 + 0.1 x$.
-
-    -   We run into trouble if $x < -3$ or $x > 7$.
+- For example, suppose we have single predictor variable, and fitted model is $\hat p(x) = 0.3 + 0.1 x$.     
+If $x < -3$ or $x > 7$, we're outside the range $[0,1]$.
 
 ---
 
 ## Introduction to Logistic Regression
 
--   Solution is to use type of sigmoid function that you met when
-    looking at neural networks.
+A solution is to use a type of sigmoidal function that you met when looking at neural networks.
 
--   Model probability $p(\mathbf{x})$ via the **logistic** (or sigmoid)
-    function: $$p(\mathbf{x}) = \frac{1}{1 + e^{-\theta(\mathbf{x})}}$$ where
-    $\theta(\mathbf{x})$ is called the **linear predictor**, given by
+We can model probability $p(\mathbf{x})$ via the **logistic** (or sigmoidal) function: $$p(\mathbf{x}) = \frac{1}{1 + e^{-\theta(\mathbf{x})}}$$ where $\theta(\mathbf{x})$ is a **linear predictor**, given by
     $$\theta(\mathbf{x}) = \beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p.$$
 
--   The inverse of the logistic function is the **logit** or log-odds
-    function
+*Importantly, the transformation of the linear predictor via the logistic function ensures that $p(\mathbf{x})$ stays within the range $[0,1]$ .*
+
+The inverse of the logistic function is the **logit** or log-odds function
     $$\theta(\mathbf{x}) = \mathsf{logit}(p(\mathbf{x})) = \log\left(\frac{p(\mathbf{x})}{1-p(\mathbf{x})}\right).$$
 
 ---
@@ -134,87 +119,95 @@ g2 <- ggplot() +
 g1+g2
 ```
 
--   Any value of linear predictor $-\infty \le \theta \le \infty$
+Any value of linear predictor $-\infty \le \theta \le \infty$
     corresponds to a feasible probability $0 < p < 1$.
 
 ---
 
-## Summary Formulation of Logistic Regression
+## Formulation of logistic regression
 
 $$\begin{aligned}
 y_i &\sim \mathsf{Bernoulli}(p(\mathbf{x}_i))\\
 \mathsf{logit}(p(\mathbf{x}_i)) &= \beta_0 + \beta_1 x_{i1} + \cdots + \beta_p x_{ip}.\end{aligned}$$
 where
 
--   $y_i$ is the response (target) variable for $i$th observation (record).
+- $y_i$ is the response (target) variable for $i$th observation (record).
 
--   $p(\mathbf{x}_i) =\mathsf{P}(y_i = 1 | \mathbf{x}_i)$, where $\mathbf{x}_i$ is vector of
+- The $\mathsf{Bernoulli}$ distribution produces $1$ with probability $p$ and $0$ with probability $1-p$.
+
+- $p(\mathbf{x}_i) =\mathsf{P}(y_i = 1 | \mathbf{x}_i)$, where $\mathbf{x}_i$ is vector of
     predictors (features) for $i$th observation.
 
--   Predictors may be quantitative, or factors coded as 0/1 indicator variables.
+-   Predictors may be quantitative, or factors coded as 0/1 indicator variables     
+(just like for ordinary linear regression models).
 
-    -   Just like for linear regression models.
+-   $\beta_1, \ldots, \beta_p$ are unknown regression parameters that can be estimated from training data.
 
--   $\beta_1, \ldots, \beta_p$ are unknown regression parameters.
+--
 
-    -   Need estimating from training data.
+Two key changes to the ordinary regression model: 
+- The output of the linear predictor is mapped onto the valid probability range $[0,1]$ via the logistic function. In GLMs, such a "mapping" function is generally called a "link function".
+- The data (given the parameters) are not assumed to be normally distributed; instead, they are assumed to come from a *Bernoulli* distribution (which can only produce $0$s and $1$s).
 
 ---
 
-## Fitting Logistic Regression Models
+## Fitting logistic regression models
 
--   Minimizing sum of squared errors is not a natural way of estimating
-    coefficients $\beta_1, \ldots, \beta_p$.
+To fit the model, we need a criterion by which to choose the values of the parameters estimating parameters $\beta_1, \ldots, \beta_p$. 
 
--   Instead, we estimate them by maximising the **likelihood** function.
+With ordinary regression, we can just minimise the sum of squared errors $\sum_{i=1}^n (y_i - \hat{y}_i)^2$.     
+This doesn't work well when $y_i$ are just a bunch of $0$s and $1$s, and $\hat{y}_i$ are probabilities.
 
--   The likelihood is just the probability of the data viewed as a
-    function of $\beta_1, \ldots, \beta_p$, with data fixed.
+Instead, we estimate parameters by maximising the **likelihood** function.
 
--   The likelihood for logistic regression is therefore
+The likelihood is just the joint probability of observing the data points $y_i$     
+given they are assumed to come from a Bernoulli distribution with estimated probabilities $\hat{p}_i$.
+
+The estimated probabilities $\hat{p}_i$ are just a function of the predictors and parameters, $\{ \mathbf{x}_i, \beta_1, \ldots, \beta_p \}$ .     
+The predictors $\mathbf{x}_i$ are fixed, so parameters $\{ \beta_1, \ldots, \beta_p \}$ are chosen to maximies the joint probability of the observed data $y_i$.
+
+---
+
+## Fitting logistic regression models
+
+The likelihood for logistic regression is: 
     $$\begin{aligned}L(\beta_1, \ldots, \beta_p) &= \prod_{i=1}^n \mathsf{P}(y_i | \mathbf{x}_i, \beta_1, \ldots, \beta_p) \\ &= \prod_{i=1}^n p(\mathbf{x}_i, \mathbf{\beta})^{y_i} (1 - p(\mathbf{x}_i, \mathbf{\beta}))^{1-y_i}\end{aligned}$$
-    where $p(\mathbf{x}_i, \mathbf{\beta})$ emphasises dependence of $p(\mathbf{x}_i)$ of
-    $\mathbf{\beta} = (\beta_1, \ldots, \beta_p)^\mathsf{T}$.
+    
+where 
+     $p(\mathbf{x}_i, \mathbf{\beta})$ emphasises dependence of $p(\mathbf{x}_i)$ of $\mathbf{\beta} = (\beta_1, \ldots, \beta_p)^\mathsf{T}$.
 
----
-
-## Fitting Logistic Regression Models
-
--   In practice, we maximise the **log-likelihood**
+In practice, due to mathematical simplicity, we maximise the **log-likelihood**
     $$\ell(\mathbf{\beta}) = \log L(\mathbf{\beta}) = \sum_{i=1}^n y_i \log(p(\mathbf{x}_i, \mathbf{\beta})) + (1-y_i) \log(1 - p(\mathbf{x}_i, \mathbf{\beta})).$$
 
--   The maximiser $\hat{\mathbf{\beta}}$ of $\ell(\mathbf{\beta})$ is called the
+The set of parameter values $\hat{\mathbf{\beta}}$ that maximise $\ell(\mathbf{\beta})$ is called the
     **maximum likelihood estimate** (MLE).
 
--   There is no closed form solution; it is found via numerical techniques.
+There is no closed form solution; we fit this model using algorithmic techniques.
 
--   More on GLMs in 161.327.
+> More on GLMs in 161.327 and 161.331.
 
 ---
 
-## Fitting Logistic Regression Models in R
+## Fitting logistic regression models in R
 
--   Function `glm` used for fitting logistic (and other generalised
-    linear) models.
+To fit logistic (and other) generalised linear models in R, we use the function 
 
--   Syntax is
+    glm(formula, family, data)
 
-        glm(formula, family, data)
+where 
 
--   Here `formula` is the model formula, e.g. `y ~ x1 + x2`.
+- `formula` is the model formula, e.g. `y ~ x1 + x2`    
+(make sure `y` is a binary 1/0 variable or a two-level factor),
 
-    -   Make sure `y` is binary 1/0 variable or two-level factor.
-
--   `family` describes the response distribution.
-
-    -   Specify `family=binomial` for logistic regression.
+-   `family` specifies the response distribution; for logistic regression specify `family=binomial`,
 
 -   `data` is the data frame to use (optional).
 
 ---
 
+## Logistic regression for the Swiss banknotes data
+
 .left-code[
-## Logistic Regression for the Swiss Banknotes
 
 ```{r swissglm, eval=FALSE}
 swiss.glm.1 <-
@@ -224,14 +217,14 @@ swiss.glm.1 <-
 summary(swiss.glm.1)
 ```
 
+Notes:
 -   `type` is a factor with two levels. `forged` is the first level
     so represents $y=0$. `genuine` represents $y=1$.
 
--   Coefficient of `margin` is negative, so $\mathsf{P}(\mathsf{genuine} | \mathsf{margin})$
+-   The coefficient for `margin` is negative, so $\mathsf{P}(\mathsf{genuine} | \mathsf{margin})$
     decreases as `margin` increases.
 
--   **Deviance** is logistic regression analogue of sum of squares in
-    linear regression.
+-   **Deviance** is a function of the log likelihood (the criterion used, instead of sum of squares, to fit the generalised linear model).
 ]
 
 .right-plot[
@@ -252,8 +245,7 @@ beta1 = round(coef(swiss.glm.1)[2], 4)
 ```{r, ref.label='swissglm', eval=FALSE}
 ```
 
--   Probability of being genuine falls below $0.5$ when
-    $\mathsf{margin} > 9.25$mm.
+The probability of being `genuine` falls below $0.5$ when $\mathsf{margin} > 9.25$mm.
 ]
 
 .right-plot[
@@ -275,25 +267,21 @@ ggplot(swiss.pred) +
 
 ---
 
-## Selection of Predictor Variables
+## Selection of predictor variables
 
--   If we have $p$ predictors available, we do not necessarily want to
-    use all of them.
+If we have $p$ predictors available, we do not necessarily want to use all of them.
 
--   We may get a much better bias-variance trade off by only using some.
+We may get a much better predictive model (better bias-variance trade off) by only using some.
 
--   One option is to compare variety of logistic regressions on
-    validation data.
+One option is to compare a variety of logistic regressions on validation data.
 
--   Computationally cheap alternative is to do backwards variable
-    selection based on AIC.
-
--   Ideas mirror those you met in linear regression for prediction.
+A computationally cheap alternative is to do backwards variable selection based on the Akaike Information Criterion (AIC).
 
 ---
 
-.left-code[
 ## More Logistic Regression for Banknotes
+
+.left-code[
 
 ```{r swissstep, eval=FALSE}
 swiss.glm.2 <- glm(type ~.,
@@ -302,15 +290,15 @@ swiss.glm.2 <- glm(type ~.,
 step(swiss.glm.2)
 ```
 
--   `swiss.glm.2` is logistic regression based on $p=2$ predictor
+-   `swiss.glm.2` is a logistic regression based on $p=2$ predictor
     variables: `margin` and `diagonal`.
 
--   Would model be better just using one of those variables?
+-   Would the model be better with just one of those variables?
 
 -   According to AIC criterion, model with both variables has lowest AIC
     (13.260).
 
--   Dropping either `margin` or `diagonal` makes the model worse.
+-   Dropping either `margin` or `diagonal` results in higher AIC scores, so best to keep both predictors.
 ]
 
 .right-plot[
@@ -322,46 +310,45 @@ step(swiss.glm.2)
 
 class: middle, inverse
 
-# Classification with Logistic Regression
+# Classification with logistic regression
 
 ---
 
-## Logistic Regression for Classification
+## Logistic regression for classification
 
--   Logistic regression provides a means of estimating the probability
-    of a 1 outcome in a binary response based on predictor variables.
+Logistic regression provides a means of estimating the probability of a 1 outcome in a binary response based on predictor variables.
 
--   Can hence be used for two group classification.
+It can hence be used for two group classification.
 
--   Let $\mathbf{x}_0 = (x_{01}, \ldots, x_{0p})^\mathsf{T}$ be feature vector for test
-    case.
+Let $\mathbf{x}_0 = (x_{01}, \ldots, x_{0p})^\mathsf{T}$ be feature vector for a test case.
 
--   Logistic regression provides estimate of
-    $p(\mathbf{x}_0) = \mathsf{P}(y=1 | \mathbf{x}_0)$.
+Logistic regression provides estimate of $p(\mathbf{x}_0) = \mathsf{P}(y=1 | \mathbf{x}_0)$.
 
--   Suppose (as usual) that we assign test case to class with highest
+Suppose (as usual) that we assign test case to class with highest
     posterior probability.
 
--   Then assign to class indicated by $y=1$ if and only if
-    $\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12$.
+Then assign to class indicated by $y=1$ if and only if $\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12$.
 
 ---
 
-## Logistic Regression and Classification Rules
+## Logistic regression and classification rules
 
--   Recall that $$p(\mathbf{x}_0) = \frac{1}{1 + e^{-\theta(\mathbf{x}_0)}}$$ where
+Recall that $$p(\mathbf{x}_0) = \frac{1}{1 + e^{-\theta(\mathbf{x}_0)}}$$ 
+where
     $\theta(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) = \beta_0 + \beta_1 x_{01} + \cdots + \beta_p x_{0p}$.
 
--   Classification to class $y=1$ occurs if and only if
+Classification to class $y=1$ occurs if and only if
     $$\begin{aligned}\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12 &\Leftrightarrow& \tfrac{1}{1 + e^{-\theta(\mathbf{x}_0)}} \ge \tfrac12 \\ &\Leftrightarrow& e^{-\theta(\mathbf{x}_0)} \le 1 \\ &\Leftrightarrow& \theta(\mathbf{x}_0) \ge 0 \\ &\Leftrightarrow& \beta_0 + \beta_1 x_{01} + \cdots + \beta_p x_{0p} \ge 0 \end{aligned}$$
 
--   In practice parameters $\beta_0, \ldots, \beta_p$ replaced by
-    maximum likelihood estimates thereof.
+In practice, we replace parameters $\beta_0, \ldots, \beta_p$ by their maximum likelihood estimates, $\hat{\beta}_0, \ldots, \hat{\beta}_p$.
+
+If the value of the linear predictor is greater than zero, predict $y=1$, if not, predict $y=0$. 
 
 ---
 
-.left-code[
 ## Another Look at the Swiss Banknotes
+
+.left-code[
 
 ```{r swiss1summary, eval=FALSE}
 summary(swiss.glm.1)
@@ -370,9 +357,11 @@ summary(swiss.glm.1)
 -   For this model, linear predictor is
     $\theta(\mathsf{margin}) = \beta_0 + \beta_1 \mathsf{margin}$.
 
--   MLEs are $\hat \beta_0 = `r beta0`$ and $\hat \beta_1 = `r beta1`$.
+-   MLEs are    
+$\hat \beta_0 = `r beta0`$ and     
+$\hat \beta_1 = `r beta1`$.
 
--   Hence fitted model has linear predictor
+-   Hence, the fitted model has linear predictor
     $`r beta0` `r beta1` \times \mathsf{margin}$
 ]
 
@@ -384,12 +373,12 @@ summary(swiss.glm.1)
 ---
 
 .left-code-wide[
-## Another Look at the Swiss Banknotes
+## Another look at the Swiss Banknotes
 
--   Classify to class coded by $y=1$ (genuine notes) if and only if
+We classify to class coded by $y=1$ (`genuine` notes) if
     $$\begin{aligned}`r beta0` `r beta1` \times \mathsf{margin} \ge 0 &\Leftrightarrow \mathsf{margin} \le \frac{`r beta0`}{`r -beta1`} \\ &\Leftrightarrow \mathsf{margin} \le `r round(-beta0/beta1,3)`.\end{aligned}$$
 
--   This is a pretty sensible place to split the training data.
+This is a pretty sensible place to split, according to the training data.
 ]
 
 .right-plot-narrow[
@@ -407,8 +396,9 @@ swiss.glm.1 |> broom::augment() |>
 
 ---
 
-.left-code[
 ## Logistic regression with both predictors
+
+.left-code[
 
 ```{r, echo=FALSE}
 beta2 = signif(coef(swiss.glm.2), 5)
@@ -468,34 +458,34 @@ swiss.glm.2 |> broom::augment() |>
 
 ---
 
-## Classifying by Logistic Regression in R
+## Classifying with logistic regression in R
 
--   Assume we classify to class coded by $y=1$ if and only if
+Assume we classify to class coded by $y=1$ if and only if
     $\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12$.
 
--   Recall that this is equivalent to
-    $\theta(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) \ge 0$.
+Recall that this is equivalent to $\theta(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) \ge 0$.
 
--   Can use `predict()` or `broom::augment()` to get estimated posterior probabilities.
+One can use `predict()` or `broom::augment()` to get estimated posterior probabilities.
 
--   But beware, prediction for logistic regression can be on one of
+But, beware, prediction for logistic regression can be on one of
     two scales.
 
-    -   Predictions on **response scale** are estimated probabilities.
+-   Predictions on **response scale** are estimated probabilities.
 
-    -   Predictions on scale of linear predictor -- i.e. logit.
+-   Predictions on scale of linear predictor -- i.e. logit.
 
--   Default in R is prediction on logit scale.
+The default in R is prediction on logit scale.
 
--   Can specify predictions on response scale through `type` argument to
-    `predict()`, or `type.predict` to `augment()`:
+One can specify predictions on response scale through `type` argument to
+    `predict()`, or `type.predict` to `augment()`.
 
--   E.g. `augment(my.glm, newdata=test.data, type.predict="response")`.
+-   For example: `augment(my.glm, newdata=test.data, type.predict="response")`.
 
 ---
 
+## Probabilities for the Swiss banknotes
+
 .left-code[
-## Probabilities for the Swiss Banknotes
 
 ```{r swisspred, eval=FALSE}
 library(broom)
@@ -505,25 +495,28 @@ swiss.glm.2 |>
 
 swiss.glm.2 |>
   augment(newdata = swiss.test,
-          type.predict = 'response') |>
+      type.predict = 'response') |>
   slice_head(n=3)
 ```
 
--   For test case 1, $\hat \theta(\mathbf{x}_0) = -18.77$.
-
--   Hence
-    $\mathsf{P}(y=1 | \mathbf{x}_0) = 1/(1+e^{-\hat \theta(\mathbf{x}_0)}) = 1/(1+e^{18.77}) \approx 0$.
 ]
 
 .right-plot[
 ```{r, ref.label='swisspred', echo=FALSE, message=FALSE}
 ```
+
+-   For test case 0, $\hat \theta(\mathbf{x}_0) = -18.77$.
+
+-   Hence,
+    $\mathsf{P}(y=1 | \mathbf{x}_0) = 1/(1+e^{-\hat \theta(\mathbf{x}_0)}) = 1/(1+e^{18.77}) \approx 0$.
+    
 ]
 
 ---
 
-.left-code[
 ## Classifying the Swiss banknotes
+
+.left-code[
 
 ```{r swisspred2, eval=FALSE}
 swiss.glm.pred <-
@@ -554,36 +547,19 @@ way around.
 
 ---
 
-.left-code-wide[
 ## Classifying the Swiss banknotes
 
-```{r swisstidy, eval=FALSE}
-library(parsnip)
-library(yardstick)
-swiss.glm.pred <-
-  logistic_reg() |>
-  fit(type ~ ., data=swiss.train) |>
-  augment(new_data=swiss.test)
+The `tidymodels` framework is convenient: there's no worry about the order of the factor, and the code structure works the same for LDA, KDA etc.
 
-swiss.glm.pred |>
-  slice_head(n=3)
+```{r eval=TRUE}
+library(parsnip); library(yardstick)
+swiss.glm.pred <- logistic_reg() |> fit(type~.,data=swiss.train) |> augment(new_data=swiss.test)
 
-swiss.glm.pred |>
-  conf_mat(truth=type,
-           estimate=.pred_class)
+swiss.glm.pred |> slice_head(n=3)
+swiss.glm.pred |> conf_mat(truth=type, estimate=.pred_class)
 ```
 
-- Much easier to use the `tidymodels` framework.
 
-- No need to worry about order of the factor.
-
-- Works the same as LDA, KDA etc.
-]
-
-.right-plot-narrow[
-```{r, ref.label='swisstidy', echo=FALSE, message=FALSE}
-```
-]
 
 ---
 
@@ -597,28 +573,27 @@ class: middle, inverse
 
 ## Symptoms of COVID-19 cases in New Zealand
 
-We have data on both confirmed cases and those tested but confirmed negative,
-along with a wide variety of symptoms, age and sex.
+We have data on both confirmed cases and those tested but confirmed negative, along with a wide variety of symptoms, age, and sex.
 
-These data were analysed in this paper:
-
+These data were analysed in this paper by French et al.:
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8556148/
 
-where they used decision trees and random forests, among other things, to identify symptoms
-that are more likely in confirmed cases than those not a case.
+They used decision trees and random forests, among other things, to identify symptoms that are more likely in confirmed cases than those confirmed to be negative.
 
 We read the data into R and process it a little using:
 
 ```{r, message=FALSE}
-covid_all <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/covid19/symptoms.csv") |>
-  mutate(across(everything(), as.factor), Status = fct_relevel(Status, "Not_a_case"))
+covid_all <- 
+  read_csv("https://www.massey.ac.nz/~jcmarsha/data/covid19/symptoms.csv") |>
+  mutate( across(everything(), as.factor), 
+          Status = fct_relevel(Status, "Not_a_case"))
 ```
 
 ---
 
 ## Symptoms of COVID-19 cases in New Zealand
 
-We'll split the data into training and testing sets
+First, we'll split the data into training and testing sets
 
 ```{r}
 library(rsample)
@@ -673,19 +648,17 @@ covid.train |>
 covid.lr <- logistic_reg() |>
   fit(Status ~ ., data=covid.train)
 
-covid.lr |>
-  tidy() |>
-  print(n=100)
+covid.lr |> tidy() |> print(n=100)
 ```
 
-Anosmia (lack of smell) is important,
-as is Ageusia (lack of taste).
+This model was fit to all predictor variables: symptoms, age, and sex.
 
-Being male is a risk factor, while
-having a sore throat is protective.
+After accounting for all other variables:
+- Anosmia (lack of smell) and Ageusia (lack of taste) were important.
+- Males were more at risk
+- Having a sore throat is a contraindication.
 
-**NOTE: This is with OG Covid. Omicron is
-also associated with Gastro symptoms.**
+NOTE: This was for the OG Covid. Omicron is also associated with Gastro symptoms.
 ]
 
 .small-font.right-plot[
@@ -699,13 +672,12 @@ also associated with Gastro symptoms.**
 
 ```{r}
 covid.pred <- covid.lr |> augment(covid.test)
-covid.pred |>
-  conf_mat(truth=Status, estimate=.pred_class)
+covid.pred |> conf_mat(truth=Status, estimate=.pred_class)
 ```
 
 We're getting "Not a case" correct, but are doing very badly at predicting cases!
 
-This may be in part due to the data being **imbalanced**: There are far more 'Not a case' than cases.
+This may be in part due to the data being **unbalanced**: There are far more 'Not a case' than cases.
 
 While the overall performance is good, if we put this into practice we would be telling over half
 of the cases that they're all good. **This is bad in a pandemic!**
@@ -714,41 +686,37 @@ of the cases that they're all good. **This is bad in a pandemic!**
 
 ## The classification threshold
 
-- By default, the logistic regression classifier (and most classifiers) classify a case as being in the second class if $\mathsf{P}(y=1 | \mathbf{x}) > 0.5$.
+By default, the logistic regression (and most classifiers) classifies a case as being in the second class if $\mathsf{P}(y=1 | \mathbf{x}) > 0.5$.
 
-- By using 0.5 as the threshold, we're assuming that each class is equally important.
+By using 0.5 as the threshold, we're assuming that each class is equally important.
 
-- In a pandemic, it is much more important to tell a case of COVID-19 that they are a case than it is to tell someone that doesn't have COVID-19 that they don't have it.
+In a pandemic, it is much more important to identify cases of COVID-19 than it is to tell someone that doesn't have COVID-19 that they don't have it.
 
-- We don't really mind if we classify people who aren't cases as being cases
+We don't really mind if we classify people who aren't cases as being cases - at worst, they'll isolate unnecessarily.
 
-    - worst case they isolate unnecessarily.
+We *do* mind if we classify people with COVID as if they do not, because they won't isolate and may go on to infect others.
 
-- We *do* mind if we classify people who are cases as being not cases though
-
-    - the consequence is that they don't isolate and may go on to infect others.
-
-- In that case we'd want to use a lower threshold than 0.5, so that we classify more people as cases than as not cases.
+Hence, we'd want to use a lower threshold than 0.5, so that we classify more people as cases than as not cases.
 
 ---
 
 ## ROC curves
 
-- By moving the threshold we're trading off *sensitivity* and *specificity*.
+By moving the threshold away from 0.5, we're trading off *sensitivity* and *specificity*.
 
-    - Sensitivity: $\mathsf{P}(\mbox{predicted case} | \mbox{true case})$
-    - Specificity: $\mathsf{P}(\mbox{predicted not a case} | \mbox{truly not a case})$
+- Sensitivity: correctly identifying true cases 
+$\ \ \ \ \ \ \ \ \ \mathsf{P}(\mbox{predicted case} | \mbox{true case})$
+- Specificity: correctly identifying negative cases $\ \ \ \mathsf{P}(\mbox{predicted not a case} | \mbox{truly not a case})$
 
-- Lowering the threshold means we predict more cases (more $y=1$), increasing sensitivity,but decreasing specificity.
+Lowering the threshold means we predict more cases (more $y=1$), increasing sensitivity, but decreasing specificity.
 
-- Increasing the threshold means we predict more non-cases (more $y=0$), increasing specificity, but decreasing sensitivity.
+Increasing the threshold means we predict more non-cases (more $y=0$), increasing specificity, but decreasing sensitivity.
 
-- The **receiver operating characteristic** (ROC) curve describes how the sensitivity
+The **receiver operating characteristic** (ROC) curve describes how the sensitivity
 and specificity change as the threshold changes.
 
-    - Plots sensitivity against 1-specificity.
-
-    - Use `roc_curve()` in `yardstick()`
+- Plots sensitivity against 1-specificity.
+- Use `roc_curve()` in `yardstick()`
 
 ---
 
@@ -770,9 +738,9 @@ ggplot(covid.roc) +
 ```
 
 Choosing a lower threshold will increase
-the sensitivity, but decrease specificity.
+the sensitivity, but decrease specificity;
 
-i.e. correctly identify more cases, but misclassify more non-cases.
+that is, correctly identify more cases, but misclassify more non-cases.
 ]
 
 .right-plot[
@@ -830,7 +798,7 @@ ggplot(covid.roc, mapping=aes(x=1-specificity,
 
 ---
 
-## Results with the alternate threshold
+## Results with the alternative threshold
 
 ```{r, warning=FALSE}
 covid.pred2 <- covid.pred |>
@@ -844,7 +812,7 @@ covid.pred2 |>
 
 This gives us much better performance on the confirmed cases, but much worse performance overall.
 
-The misclassification rate is not a fair measure of what is important to us.
+But, the overall misclassification rate is not a good measure of what is important to us.
 
 ---
 
@@ -862,12 +830,12 @@ cost_fun <- function(truth, prediction) {
             TRUE ~ 0)
 }
 
-covid.pred2 |> mutate(lr = cost_fun(Status, .pred_class),
-                       lr_alt = cost_fun(Status, .pred_class_alt)) |>
-  summarise(across(starts_with('lr'), sum))
+covid.pred2 |> mutate(cost = cost_fun(Status, .pred_class),
+                      cost_alt = cost_fun(Status, .pred_class_alt)) |>
+  summarise(across(starts_with('cost'), sum))
 ```
 
-By this measure, the alternate threshold is much better.
+By this measure, the alternative threshold is much better.
 
 ---
 
@@ -879,58 +847,50 @@ class: middle, inverse
 
 ---
 
-## More than Two Classes
+## More than two classes
 
--   In logistic regression, probability $\mathsf{P}(y = 1|\mathbf{x})$ related to the
+In logistic regression, probability $\mathsf{P}(y = 1|\mathbf{x})$ related to the
     predictors via the linear predictor,
     $\theta(\mathbf{x}) = \beta_0 + \beta_1 x_{1} + \cdots + \beta_p x_{p}$.
 
--   Can extend to $C$ classes by defining $C-1$ linear predictors,
+One can extend the model to $C$ classes by defining $C-1$ linear predictors,
     $\theta_1(\mathbf{x}), \ldots, \theta_{C-1}(\mathbf{x})$.
 
--   Probability of class $j$, $p_j(\mathbf{x}) = \mathsf{P}(j | \mathbf{x})$, an increasing
-    function of $\theta_j(\mathbf{x})$.
+The probability of class $j$, $p_j(\mathbf{x}) = \mathsf{P}(j | \mathbf{x})$, is an increasing function of $\theta_j(\mathbf{x})$.
 
--   Probabilities appropriately scaled to ensure that all in interval
-    $[0,1]$, and that $\sum_{j=1}^{C-1} p_{j}(\mathbf{x}) \le 1$.
+The probabilities appropriately scaled to all be within interval
+$[0,1]$, and that $\sum_{j=1}^{C-1} p_{j}(\mathbf{x}) \le 1$.
 
--   Final class probability given by
-    $p_C(\mathbf{x}) = 1 - \sum_{j=1}^{C-1} p_j(\mathbf{x})$.
+The final class probability given by $p_C(\mathbf{x}) = 1 - \sum_{j=1}^{C-1} p_j(\mathbf{x})$      
+(that is, 1 - the rest of them). 
 
--   Model referred to as a **multinomial** regression because there are
-    multiple classes for the response (target variable).
+This model referred to as a **multinomial** regression because there are multiple classes for the response (target variable).
 
 ---
 
 ## Implementation of Multinomial Model in R
 
--   Lots of parameters to estimate. There are $C-1$ linear predictors, each with $p+1$ parameters.
+There are lots of parameters to estimate. There are $C-1$ linear predictors, each with $p+1$ parameters.
 
--   Multinomial regression is equivalent to a (classification) neural network with no hidden layers, and a
-sigmoid transformation on the output.
+Multinomial regression is equivalent to a (classification) neural network with no hidden layers, and a sigmoidal transformation on the output. This is what is done by the `multinom` function in the `nnet` package.
 
--   This is what is done by the `multinom` function in the `nnet` package.
+We'll use the `tidymodels` framework via the `multinom_reg()` specification.
 
--   We'll use the `tidymodels` framework via the `multinom_reg()` specification.
-
--   As we use `nnet()` under the hood, we need to beware of numerical problems.
-
-    -   Best to scale predidctors that are large in magnitude.
+As we use `nnet()` under the hood, we need to beware of numerical problems. For instance, it is best to rescale predictors that are large in magnitude.
 
 ---
 
+
 .left-code[
-## Computerized Wine Tasting
+## Computerised wine tasting
 
-- We consider some data on Italian wines.
-
-- We have 100 records in the training set.
-
+We consider some data on Italian wines, with:
+- 100 records in the training set and 
 - 78 records in an artificial test set.
 
-- Aim is to classify the wine `Cultivar` based on $p=13$ chemical measurements.
+The aim is to classify the wine `Cultivar` based on $p=13$ chemical measurements.
 
-- `Cultivar` has three classes, `A`, `B` and `C`.
+`Cultivar` has three classes: `A`, `B` and `C`.
 ]
 
 .right-plot[
@@ -941,7 +901,7 @@ knitr::include_graphics('graphics/chianti.jpg')
 
 ---
 
-## Computerized Wine Tasting
+## Computerised wine tasting
 
 ```{r, message=FALSE}
 wine.train <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/wine-train.csv") |>
@@ -953,19 +913,8 @@ wine.train
 
 ---
 
-.left-code[
-## Computerized Wine Tasting
-
-```{r winemn, results='hide'}
-wine.mn <- multinom_reg() |>
-  fit(Cultivar ~ ., data=wine.train)
-wine.mn
-wine.mn |>
-  augment(new_data=wine.test) |>
-  conf_mat(
-    truth=Cultivar,
-    estimate=.pred_class
-  )
+```{r winemn, include=FALSE, results='hide'}
+wine.mn <- multinom_reg() |> fit(Cultivar ~ ., data=wine.train)
 ```
 
 ```{r, echo=FALSE}
@@ -978,47 +927,76 @@ perf.mn <- wine.mn |>
   get_perf(Cultivar, .pred_class)
 ```
 
+.left-code[
+
+## Computerised wine tasting
+
+<br/>
+<br/>
+<br/>
+<br/>
+
 Coefficients are shown only for cultivars `B` and `C`,
 as the `A` cultivar is determined as probabilities must
 sum to 1.
+      
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
 
 The misclassification rate is $`r perf.mn$wrong`/`r perf.mn$total` \approx `r perf.mn$perc`\%$.
 ]
 
 .right-plot[
-```{r, ref.label='winemn', echo=FALSE}
+.small-font[
+
+```{r}
+wine.mn <- multinom_reg() |> fit(Cultivar ~ ., data=wine.train)
+
+wine.mn
+
+wine.mn |> 
+  augment(new_data=wine.test) |>
+  conf_mat(truth=Cultivar,estimate=.pred_class
+  )
 ```
 ]
+]
+
 ---
 
-## Computerized Wine Tasting
+## Computerised wine tasting
+
+We can perform step-wise regression, but not within the `tidymodels` framework, so we've used `multinom`.
 
 ```{r, results='hide'}
 library(nnet)
-wine.mn2 <- multinom(Cultivar ~ .,
-                     data=wine.train)
+wine.mn2 <- multinom(Cultivar ~ ., data=wine.train)
 wine.mn2.step <- step(wine.mn2)
 wine.mn2.step
 ```
+
 ```{r, echo=FALSE}
 wine.mn2.step
 ```
 
-Can perform step-wise regression, but not
-within the `tidymodels` framework, so need
-to do this directly with `multinom`.
-
 ---
 
-## Computerized Wine Tasting
+## Computerised wine tasting
 
 Once we know which variables to use from the step wise procedure, we can re-fit using `tidymodels`.
 
 ```{r winerefit}
 wine.mn2.refit <- multinom_reg() |>
   fit(Cultivar ~ Alcohol + Flav + Hue + Proline, data=wine.train)
+
 wine.mn2.pred <- wine.mn2.refit |>
   augment(new_data = wine.test)
+
 wine.mn2.pred |>
   conf_mat(truth=Cultivar, estimate=.pred_class)
 ```
@@ -1027,4 +1005,36 @@ wine.mn2.pred |>
 perf.mn2 <- wine.mn2.pred |> get_perf(Cultivar, .pred_class)
 ```
 
-The misclassification rate of the simpler model is $`r perf.mn2$wrong`/`r perf.mn2$total` \approx `r perf.mn2$perc`\%$.
+The misclassification rate of the simpler model is $`r perf.mn2$wrong`/`r perf.mn2$total` \approx `r perf.mn2$perc`\%$, achieved with much fewer variables.
+
+---
+
+# Summary
+
+- Logistic regression is one type of Generalised Linear Model, applicable where the response variable is binary. 
+
+--
+
+- A logistic regression predicts the probability that $y=1$ given predictor variables. 
+
+--
+
+- Logistic regression maps a probability with range $[0,1]$ onto the real line $(-\infty,\infty)$ via the logit ("log-odds") function. 
+
+     - A linear predictor is fit in the logit-transformed-probability space
+
+     - The output from the linear predictor can be transformed back to probabilities using the inverse-logit function.
+
+--
+
+- The model is fit (i.e., parameters are estimated) by maximising the (log) likelihood of the Bernoulli distribution. The Bernoulli produces a $1$ with probability $p$ and a $0$ with probabilty $1-p$.
+
+--
+
+- Costs of the two different types of error (false positive and false negative) can be incorporated into predictions when using it as a classifier. 
+
+--
+
+- Logistic regression can be extended to multinomial regression when the response variable has more than two classes.
+
+
