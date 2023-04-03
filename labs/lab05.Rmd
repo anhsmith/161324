@@ -42,7 +42,7 @@ The above tree is fit with the default value of the complexity parameter `cp`. W
 model2.rp <- rpart(usr ~ ., data=comp_train, cp=0.001)
 ```
 
-### Try yourself
+### Try it yourself
 
 Plot and label this second tree. You should see you get a much more complex tree!
 
@@ -70,7 +70,7 @@ plotcp(model2.rp)
 
 Again, about 0.003 seems to be where we no longer improve.
 
-### Try yourself
+### Try it yourself
 
 Refit the tree model using `cp=0.003` and take a look at the corresponding tree.
 
@@ -97,7 +97,7 @@ Now we can compute MSE in the same way we did in workshop 4:
 comp_pred1 |> summarise(MSE = mean((.fitted - usr)^2))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Compute the MSE for `model2.rp` and `model3.rp` in the same way. Which model performs best?
 
@@ -105,7 +105,7 @@ comp_pred1 |> summarise(MSE = mean((.fitted - usr)^2))
 
 ## Dealing with missingness
 
-One thing that regression trees are particularly useful for are where we have some data missing.
+One thing that regression trees are particularly useful for are missing data.
 
 Let's take our training set and change it so we have some missing data in `vflt` (recall this was the variable used in the first split) [^na_real].
 
@@ -115,7 +115,7 @@ comp_train.miss <- comp_train |>
 comp_train.miss |> select(vflt, everything())
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Fit a regression tree to the `comp_train.miss` data using `cp=0.003` as above.
 2. Plot the tree. You should find that `vflt` is still the first split.
@@ -123,9 +123,9 @@ comp_train.miss |> select(vflt, everything())
 
 ## Moving from trees to forests
 
-Instead of fitting a single tree to the data, we could instead try lots of trees: a forest. A random forest is where we re-sample the training data repeatedly (using the bootstrap) and for each resample we fit a tree (using a random subset of the predictors rather than all of them). We then average our predictions across all the trees. It's an example of an **ensemble** method, as we're essentially averaging over many models.
+Instead of fitting a single tree to the data, we could instead try lots of trees: a forest. A random forest is where we re-sample the training data repeatedly (using the bootstrap) and, to each resample, we fit a tree (using a random subset of the predictors rather than all of them). We then average our predictions across all the trees. It's an example of an **ensemble** method, as we're essentially averaging over many models.
 
-These two things allow us to explore a range of potentially different trees, allowing some variables to be used that might not otherwise be in a single tree, and potentially giving a better overall prediction.
+Random forests explore a range of potentially different trees, allowing some variables to be used that might not otherwise be in a single tree, and potentially giving a better overall prediction.
 
 The `randomForest` package can do this. The `importance` function then gives us an idea of which variables are important. We can plot this with `varImpPlot()`[^vip].
 
@@ -137,7 +137,7 @@ varImpPlot(model.rf)
 
 As expected, the `vflt` and `pflt` variables are most important.
 
-### Try yourself
+### Try it yourself
 
 1. The `predict()` function works in the same way as it does for `rpart`. Produce predictions from the random forest model.
 
@@ -147,7 +147,7 @@ As expected, the `vflt` and `pflt` variables are most important.
 
 ## Making things a bit tidier with parsnip
 
-The commands required to fit a model with `rpart` or `randomForest`, in particular to do prediction are a little messy, and unfortunately `broom` doesn't sweep things tidy for tree based models[^broomstick].
+The commands required to fit and make predictions from a model with `rpart` or `randomForest` are a little messy, and unfortunately `broom` doesn't sweep things tidily for tree based models[^broomstick].
 
 The `tidymodels` framework is a way to address this for `rpart`, `randomForest` and a bunch more models. The `broom` and `yardstick` packages are part of this. The goal is to provide a uniform interface for both fitting models ( with `lm`, `rpart` and `randomForest`, these have so far been similar) and for obtaining predictions or model performance. The `parsnip` package is what provides a common model-fitting interface[^parsnip].
 
@@ -172,7 +172,7 @@ Note the process here:
 3. We then predict the model via `predict()`, specifying the test data.
 4. We then summarise the fit using `metrics()` (or `rmse`, `mae` etc).
 
-### Try yourself
+### Try it yourself
 
 1. Modify the above to provide fits with different cost complexity (`cp`).
 

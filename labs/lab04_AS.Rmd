@@ -84,6 +84,14 @@ comp_long
 
 3. Now that we have `comp_long`, use `ggplot` to produce scatterplots of `usr` against each variable by utilising `facet_wrap`. Note that will likely need to allow the x scale to vary.
 
+```{r}
+comp_long |> 
+  ggplot() +
+  aes(x=value,y=usr) +
+  geom_point() + 
+  facet_wrap(~name, scales = "free")
+```
+
 4. What is your conclusion regarding how some of these variables will be useful for predicting `usr`?
 
 ### Splitting the data
@@ -185,7 +193,8 @@ To assess, let's take a look at our predictions from `model1` again by plotting 
 
 ```{r}
 model1_pred |>
-  ggplot() +
+  ggplot()+
+  geom_abline(mapping = aes(intercept = 0, slope = 1)) +
   geom_point(mapping = aes(x=usr, y=.fitted))
 ```
 
@@ -203,6 +212,121 @@ model1_pred |> mae(usr, .fitted)
 ### Try it yourself
 
 Compute the mean absolute error for each of the models. What is your conclusion regarding which model(s) are best now?
+
+## Adams failed attempt to improve the model with transformations
+
+```{r}
+comp_long |> 
+  ggplot() +
+  aes(x=log1p(value),y=usr^6) +
+  geom_point() + 
+  facet_wrap(~name, scales = "free")
+```
+
+### Log(x+1) transform the predictors
+
+```{r}
+model2 <- lm(usr ~ log1p(lread)+log1p(lwrite)+log1p(scall)+
+               log1p(sread)+log1p(swrite)+log1p(fork)+
+               log1p(exec)+log1p(rchar)+log1p(wchar)+
+               log1p(pgout)+log1p(ppgout)+log1p(pgfree)+
+               log1p(pgscan)+log1p(atch)+log1p(pgin)+
+               log1p(ppgin)+log1p(pflt)+log1p(vflt)+
+               log1p(runqsz)+log1p(freemem)+log1p(freeswap), 
+             data = comp_train)
+summary(model2)
+```
+
+```{r}
+model2_pred <- augment(model2, newdata = comp_test) |> 
+  select(usr, .fitted, everything())
+model2_pred
+```
+
+```{r}
+model2_pred |>
+  ggplot() +
+  geom_point(mapping = aes(x=usr, y=.fitted))
+```
+
+### Find box-cox coefficient for response variable
+
+```{r}
+bc_m2 <- MASS::boxcox(model2, lambda = seq(-2,15,by=.1))
+bc_m2$x[which.max(bc_m2$y)]
+```
+
+### Show that full box-cox is effectively the same as just power transformation
+
+```{r}
+plot(((comp$usr^6-1)/6), comp$usr^6)
+```
+
+
+```{r}
+model3 <- update(model2, usr^6 ~ .)
+summary(model3)
+plot(model3)
+```
+
+### Predict for test dataset
+
+```{r}
+model3_pred <- augment(model3, newdata = comp_test) |> 
+  mutate(.fitted = .fitted^(1/6)) |> 
+  select(usr, .fitted, everything())
+model3_pred
+```
+
+```{r}
+model3_pred |>
+  ggplot() +
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  geom_point(mapping = aes(x=usr, y=.fitted))
+```
+
+```{r}
+model1_pred |> rmse(truth = usr, estimate = .fitted)
+model3_pred |> rmse(truth = usr, estimate = .fitted)
+```
+
+```{r}
+model1_pred |> mae(usr, .fitted)
+model3_pred |> mae(usr, .fitted)
+```
+
+Conclusion: the model of untransformed data is actually better when all variables are used. 
+
+### After model selection
+
+```{r}
+m1s <- step(model1, direction="both")
+m3s <- step(model3, direction="both")
+```
+
+
+### Predict for test dataset
+
+```{r}
+m1s_pred <- augment(m1s, newdata = comp_test) |> 
+  select(usr, .fitted, everything())
+m1s_pred
+
+m3s_pred <- augment(m3s, newdata = comp_test) |> 
+  mutate(.fitted = .fitted^(1/6)) |> 
+  select(usr, .fitted, everything())
+m3s_pred
+```
+
+```{r}
+model1_pred |> rmse(truth = usr, estimate = .fitted)
+model3_pred |> rmse(truth = usr, estimate = .fitted)
+m1s_pred |> rmse(truth = usr, estimate = .fitted)
+m3s_pred |> rmse(truth = usr, estimate = .fitted)
+```
+
+Best model is the step-wise model 1.
+
 
 ### Bonus
 
