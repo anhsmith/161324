@@ -744,7 +744,7 @@ that is, correctly identify more cases, but misclassify more non-cases.
 ]
 
 .right-plot[
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 covid.roc <-
   covid.pred |>
   roc_curve(Status,

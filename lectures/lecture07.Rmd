@@ -921,7 +921,7 @@ Can extend to higher dimensions, though $h$ then becomes a bandwidth matrix.
 ]
 
 .right-plot[
-```{r anim1, echo=FALSE, warning=FALSE}
+```{r anim1, echo=FALSE, warning=FALSE, message=FALSE}
 xkd |> 
   pivot_longer(cols = y1:y7) |> 
   ggplot() +

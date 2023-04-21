@@ -1,0 +1,727 @@
+---
+title: "Cluster Analysis"
+subtitle: "161324 Data Mining | Lecture 10"
+format: 
+  revealjs:
+    theme: [default, myquarto.scss]
+    slide-number: c/t  
+    footer: "161324 Data Mining | Lecture 10 | Cluster Analysis"
+    logo: graphics/L_Color.png
+execute:
+  echo: true
+---
+
+
+```{r}
+#| echo: false
+
+library(kableExtra)
+library(tidyverse)
+library(ggrepel)
+library(animation)
+library(workflows)
+library(parsnip)
+library(tidyclust)
+library(recipes)
+library(rsample)
+library(tune)
+library(factoextra)
+theme_set(theme_bw())
+```
+
+
+## Cluster Analysis 
+
+. . .
+
+
+In the past couple of weeks, we've been looking at classification models, which aim to predict the value of an *existing* categorical variable $Y$ based on a set of variables $\mathbf{X}$. This is called **supervised** classification.
+
+. . .
+
+
+Cluster analysis is a broad range of methods for creating a *new* categorical variable based on a set of variables $\mathbf{X}$. This is called **unsupervised** classification.
+
+. . .
+
+
+The goal is to classify our cases into groups that have *high within-group similarity* and *low between-group similarity*, with respect to $\mathbf{X}$.
+
+
+---
+
+:::: {.columns}
+
+::: {.column width="80%"}
+
+<br><br>
+Sometimes there clearly are some groups. <br><br><br>
+
+Sometimes there clearly are no groups. <br><br><br>
+
+Often its something in between.
+
+:::
+
+::: {.column width="20%"}
+![](../graphics/three_scenarios.png){.absolute right=100 width="200"}
+:::
+
+::::
+
+<br>
+
+. . .
+
+
+::: {.callout-important}
+Regardless of the situation, cluster analysis will *always* produce groups!
+:::
+
+
+# The $k$-means clustering algorithm
+
+## The $k$-means algorithm {.smaller}
+
+::::{.columns}
+
+:::{.column}
+
+<br><br> 
+
+1. Choose number of groups $k$ (here 3).
+
+2. Initialise the $k$ centroids in $\mathbf{X}$ space     
+(e.g., choose three points at random).
+
+3. Loop until convergence:
+    a. Assign cases to nearest centroid.
+    b. Update centroid location.
+
+<br>
+
+Repeat this a number of times to ensure a good result.
+    
+
+:::
+
+:::{.column}
+
+```{r}
+#| echo: false
+#| fig-show: animate
+#| fig-height: 6
+#| fig-width: 6
+
+set.seed(2)
+km.ani <- kmeans.ani(col = c("#004B8D", "#E4A024", "#9A3324"), pch=16)
+```
+
+:::
+
+::::
+
+## European protein composition {.scrollable}
+
+This dataset contains the proportions (as percentages) of each of nine major sources of protein in the diets of 25 European countries, some time prior to the 1990s.
+
+```{r}
+#| echo: true
+
+food <- read_csv("https://massey.ac.nz/~anhsmith/data/food.csv")
+kable(food) |> kable_styling(font_size = 18)
+```
+
+
+## European protein composition 
+
+```{r}
+#| output-location: column
+#| fig-width: 5
+#| fig-height: 5
+
+food |> ggplot() +
+  aes(x=RedMeat,y=WhiteMeat,label=Country) +
+  geom_point() + 
+  geom_text_repel(size=2.5) +
+  xlab("Percent from red meat") +
+  ylab("Percent from white meat") +
+  theme(aspect.ratio=1, 
+        legend.position = "top")
+```
+
+
+## European protein: $k$-means 
+
+First, let's try with 3 clusters and 1 random start.
+
+```{r}
+#| output-location: column
+set.seed(1)
+km_spec_k3_s1 <- k_means(num_clusters = 3) |> 
+  parsnip::set_engine("stats", 
+                      nstart = 1)
+
+km_fit_k3_s1 <- km_spec_k3_s1 |> 
+  fit(~ RedMeat + WhiteMeat, data = food)
+
+km_fit_k3_s1
+```
+
+## European protein: $k$-means 
+
+First, let's try with 3 clusters and 1 random start.
+
+```{r}
+#| output-location: column
+#| fig-width: 5
+#| fig-height: 5
+
+km_fit_k3_s1 |> 
+  augment(food) |> 
+  ggplot() +
+  aes(x=RedMeat,
+      y=WhiteMeat,
+      label=Country, 
+      col=.pred_cluster) +
+  geom_point() + 
+  geom_text_repel(size=2.5) +
+  xlab("Percent from red meat") +
+  ylab("Percent from white meat") +
+  theme(aspect.ratio=1, 
+        legend.position = "top")
+
+```
+
+## European protein: $k$-means 
+
+Now, let's do 50 random starts.
+
+```{r}
+#| output-location: column
+set.seed(1)
+km_spec_k3 <- k_means(num_clusters = 3) |> 
+  parsnip::set_engine("stats", 
+                      nstart = 50)
+
+km_fit_k3 <- km_spec_k3 |> 
+  fit(~ RedMeat + WhiteMeat, data = food)
+
+km_fit_k3 
+```
+
+## European protein: $k$-means 
+
+Now, let's do 50 random starts.
+
+```{r}
+#| output-location: column
+#| fig-width: 5
+#| fig-height: 5
+
+km_fit_k3 |> 
+  augment(food) |> 
+  ggplot() +
+  aes(x=RedMeat,
+      y=WhiteMeat,
+      label=Country, 
+      col=.pred_cluster) +
+  geom_point() + 
+  geom_text_repel(size=2.5) +
+  xlab("Percent from red meat") +
+  ylab("Percent from white meat") +
+  theme(aspect.ratio=1, 
+        legend.position = "top")
+
+```
+
+
+## European protein: $k$-means 
+
+What about 2 clusters?
+
+```{r}
+#| output-location: column
+set.seed(1)
+km_spec_k2 <- k_means(num_clusters = 2) |> 
+  parsnip::set_engine("stats", 
+                      nstart = 50)
+
+km_fit_k2 <- km_spec_k2 |> 
+  fit(~ RedMeat + WhiteMeat, data = food)
+
+km_fit_k2
+```
+
+## European protein: $k$-means 
+
+What about 2 clusters?
+
+```{r}
+#| output-location: column
+#| fig-width: 5
+#| fig-height: 5
+
+km_fit_k2 |> 
+  augment(food) |> 
+  ggplot() +
+  aes(x=RedMeat,
+      y=WhiteMeat,
+      label=Country, 
+      col=.pred_cluster) +
+  geom_point() + 
+  geom_text_repel(size=2.5) +
+  xlab("Percent from red meat") +
+  ylab("Percent from white meat") +
+  theme(aspect.ratio=1, 
+        legend.position = "top")
+
+```
+
+
+
+## European protein: $k$-means 
+
+Or 4?
+
+```{r}
+#| output-location: column
+set.seed(1)
+km_spec_k4 <- k_means(num_clusters = 4) |> 
+  parsnip::set_engine("stats", 
+                      nstart = 50)
+
+
+
+km_fit_k4 <- km_spec_k4 |> 
+  fit(~ RedMeat + WhiteMeat, data = food)
+
+km_fit_k4
+```
+
+## European protein;: $k$-means 
+
+Or 4?
+
+```{r}
+#| output-location: column
+#| fig-width: 5
+#| fig-height: 5
+ 
+km_fit_k4 |> 
+  augment(food) |> 
+  ggplot() +
+  aes(x=RedMeat,
+      y=WhiteMeat,
+      label=Country, 
+      col=.pred_cluster) +
+  geom_point() + 
+  geom_text_repel(size=2.5) +
+  xlab("Percent from red meat") +
+  ylab("Percent from white meat") +
+  theme(aspect.ratio=1, 
+        legend.position = "top")
+
+```
+
+
+## How to choose $k$? 
+Increasing $k$ will always decrease with within-group error. 
+
+```{r}
+#| cache: true
+#| layout-nrow: 1
+#| fig-width: 3.4
+#| fig-height: 3.4
+#| echo: false
+
+library(factoextra)
+
+meat <- food |> 
+  column_to_rownames(var="Country") |> 
+  select(RedMeat,WhiteMeat)
+
+fviz_cluster(
+    object = km_fit_k2$fit, 
+    data = meat,
+    ellipse.type = "none",#euclid",
+    star.plot=T,
+    repel=T,
+    ggtheme=theme_bw()) +
+  theme(aspect.ratio=1) +
+  ggtitle("k=2") +
+  theme(legend.position = "none") +
+  xlab("") + ylab("")
+  
+
+fviz_cluster(
+    object = km_fit_k3$fit, 
+    data = meat,
+    ellipse.type = "none",#euclid",
+    star.plot=T,
+    repel=T,
+    ggtheme=theme_bw()) +
+  theme(aspect.ratio=1) +
+  ggtitle("k=3") +
+  theme(legend.position = "none") +
+  xlab("") + ylab("")
+
+
+fviz_cluster(
+    object = km_fit_k4$fit, 
+    data = meat,
+    ellipse.type = "none",#euclid",
+    star.plot=T,
+    repel=T,
+    ggtheme=theme_bw()) +
+  theme(aspect.ratio=1) +
+  ggtitle("k=4") +
+  theme(legend.position = "none") +
+  xlab("") + ylab("")
+
+
+fviz_cluster(
+    object = kmeans(meat,5), 
+    data = meat,
+    ellipse.type = "none",#euclid",
+    star.plot=T,
+    repel=T,
+    ggtheme=theme_bw()) +
+  theme(aspect.ratio=1) +
+  ggtitle("k=5") +
+  theme(legend.position = "none") +
+  xlab("") + ylab("")
+```
+
+```{r}
+#| output-location: column
+#| fig-width: 6
+#| fig-height: 3
+library(factoextra)
+fviz_nbclust(meat, 
+             kmeans, 
+             method='wss', 
+             k.max = 5)
+```
+
+## The 'silhouette' method {.smaller}
+
+The silhouette index measures how well the data points fit within their cluster vs a neighbouring cluster.
+
+
+:::: {.columns}
+
+::: {.column}
+
+For each case $i$, calculate:
+
+$a(i)$ = the average distance from case $i$<br>to all other members of its own cluster.
+
+$b(i)$ = the average distance from case $i$<br>to all members of the nearest neighbouring cluster.
+
+$s(i) = \frac{b(i)-a(i)}{\mathbf{max}(b(i),a(i))}$
+
+:::
+
+::: {.column}
+
+```{r}
+#| fig-width: 3.4
+#| fig-height: 3.4
+#| echo: false
+#| fig-show: animate
+
+set.seed(1)
+
+kplot <- food |> 
+  add_column(Cluster = as_factor(km_fit_k3$fit$cluster)) |>
+  ggplot() +
+  aes(x=RedMeat,
+      y=WhiteMeat,
+      label=Country, 
+      col=Cluster) +
+  geom_point() + 
+  geom_text_repel(size=2.5) +
+  xlab("") +
+  ylab("") +
+  theme(aspect.ratio=1, 
+        legend.position = "none")
+
+segs_belg <- food |> 
+  transmute(xend=RedMeat,yend=WhiteMeat,Country,
+            Cluster=km_fit_k3$fit$cluster) |>
+  mutate(x = food |> filter(Country=="Belgium") |> pull(RedMeat),
+         y = food |> filter(Country=="Belgium") |> pull(WhiteMeat)) |> 
+  filter(Cluster!=3 & Country!="Belgium")
+  
+set.seed(1)
+
+kplot + 
+  geom_segment(
+    data=segs_belg |> filter(Cluster==1),
+    mapping=aes(x=x,y=y,xend=xend,yend=yend),
+    inherit.aes = F
+  ) + 
+  annotate("text", x=18, y = 14, label="a(i)", vjust=1, hjust=1, size=8)
+
+set.seed(1)
+
+kplot + 
+  geom_segment(
+    data=segs_belg |> filter(Cluster==2),
+    mapping=aes(x=x,y=y,xend=xend,yend=yend),
+    inherit.aes = F
+  ) + 
+  annotate("text", x=18, y = 14, label="b(i)", vjust=1, hjust=1, size=8)
+
+```
+
+:::
+
+::::
+
+The scaling of $s(i)$ by the maximum means that $s(i)$ is always between -1 and 1. 
+
+If $s(i)$ is near 1, the point clearly belongs in its cluster.      
+If $s(i)$ is near zero, then the point is "on the fence".       
+If $s(i)$ is negative, then the point is more similar to members of another cluster.
+
+
+## The 'silhouette' method
+
+```{r}
+#| output-location: column
+#| fig-width: 6
+#| fig-height: 7
+
+# Create Euclidean distance matrix
+dist_meat <- meat |> dist()
+
+# Make silhouette plot
+km_fit_k3$fit$cluster |> 
+  cluster::silhouette(dist_meat) |> 
+  `rownames<-`(rownames(meat)) |> 
+  fviz_silhouette(label = T, 
+                  print.summary = F) +
+  coord_flip()
+```
+
+
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 3.4
+#| fig-height: 3.4
+kplot
+```
+:::
+
+
+## Using silhouette to choose $k$
+
+For any cluster analysis, we can calculate the *overall average* silhouette score. We can then run the cluster analysis for a range of values of $k$ and choose the value that gives the highest silhouette score. 
+
+The `factoextra` package provides some convenient functions for this.
+
+```{r}
+#| output-location: column
+#| fig-width: 4
+#| fig-height: 3
+library(factoextra)
+fviz_nbclust(meat, 
+             kmeans, 
+             method='silhouette', 
+             k.max = 6)
+```
+
+By this criterion, we'd choose $k$ = 3. 
+
+## Leave-one-out silhouette 
+
+```{r}
+#| output-location: column
+#| cache: true
+#| fig-width: 5
+#| fig-height: 3
+
+
+food_cv_metrics <- tune_cluster(
+  object = workflow(
+    recipe(~ RedMeat + WhiteMeat, 
+           data = food), 
+    k_means(num_clusters = tune())
+    ),
+  resamples = vfold_cv(
+    food, 
+    v = nrow(food)
+    ),
+  grid = tibble(
+    num_clusters=2:6
+    ),
+  control = control_grid(
+    save_pred = TRUE, 
+    extract = identity),
+  metrics = cluster_metric_set(
+    sse_ratio, 
+    silhouette_avg
+    )
+)
+
+food_cv_metrics |> 
+  collect_metrics() |> 
+  ggplot() +
+  aes(x = num_clusters, 
+      y = mean, 
+      col = .metric) +
+  geom_point() + geom_line() +
+  ylab("Metric score") + 
+  xlab("Number of clusters") 
+```
+
+
+## $k$-means for more than two variables  {.smaller}
+
+:::: {.columns}
+
+::: {.column width="35%"}
+
+It's not all about meat! There are actually 9 variables in this dataset.
+
+Note that, although they are all measured as percentages, some vary much more than others. 
+
+It is generally sensible to *normalise* variables (subtract the mean and divide by the standard deviation) before doing $k$-means, or any other analysis that uses Euclidean distances. Otherwise, the variables with larger variances will dominate!
+
+:::
+
+::: {.column width="65%"}
+```{r}
+#| echo: false
+#| fig-width: 7
+#| fig-height: 6
+library(GGally) 
+food |> select(-Country) |> ggpairs(diag = list(continuous="barDiag"), gaps=0)
+```
+
+:::
+
+::::
+
+## Choosing $k$ for 9 normalised variables
+
+```{r}
+#| output-location: column
+#| fig-width: 5
+#| fig-height: 4
+food <- food |> 
+  column_to_rownames(var="Country")
+
+food_norm <- food |> 
+  recipe(~ .) |>
+  step_normalize(all_numeric()) |> 
+  prep() |> 
+  bake(food) |> 
+  mutate(Country = rownames(food)) |> 
+  column_to_rownames(var="Country")
+
+food_norm |> 
+  fviz_nbclust(kmeans, 
+               method='silhouette', 
+               k.max = 10)
+```
+
+
+
+## Visualising cluster analysis for nine variables
+
+The `fviz_cluster()` function will now show the clusters on a Principal Components Analysis plot of the nine variables. 
+
+```{r}
+km_all_k2 <- kmeans(food_norm, centers=2, nstart=50)
+fviz_cluster(km_all_k2, data=food_norm, repel=T, ggtheme=theme_bw())
+```
+
+## 
+
+```{r}
+#| fig-width: 8
+#| fig-height: 7
+library(GGally) 
+food |> 
+  add_column(Cluster = factor(km_all_k2$cluster)) |> 
+  ggpairs(mapping=aes(colour = Cluster))
+```
+
+## Summary: $k$-means
+
+::: {.increment}
+
+- Inherently based on Euclidean distances.
+
+- It is wise to normalise variables first.
+
+- For large numbers of variables, ordination methods like Principal Components Analysis (PCA) can be used to visualise clusters. 
+
+- Looks for 'spherical clusters'; not so good for irregular shapes. 
+
+- Relatively fast, iterative algorithm.
+
+- The silhouette index can be used to choose $k$.
+
+- If one uses actual data points as the cluster centres ('medoids') instead of centroids, giving '$k$-medoid' cluster analysis. This may be implemented with `pam()` in R.
+
+:::
+
+
+# Hierarchical clustering
+
+
+## Hierarchical clustering {.scrollable}
+
+
+```{r}
+dist(food_norm) |> as.matrix() |> round(2) |> 
+  kable() |> kable_styling(font_size = 12)
+```
+
+
+## Hierarchical clustering
+
+
+Hierarchical clustering is a very different approach to $k$-means.
+
+![](/graphics/agglom.gif){.fragment}
+## Observable
+
+```{ojs}
+
+food = FileAttachment("../data/food.csv").csv()
+
+```
+
+
+
+## Using gap analysis to choose $k$
+
+
+```{r}
+
+
+# fviz_gap_stat(gap_stat)
+
+
+```
+
+
+
+
+## Clustering binary data
+
+```{r}
+animals <- cluster::animals |> 
+  rename("warm-blooded"=war, "can fly"=fly, "vertebrate"=ver, "endangered"=end, "live in groups"=gro, "have hair"=hai)
+
+```
+
+
+
+

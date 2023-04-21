@@ -17,20 +17,11 @@ The techniques we'll cover include:
 
 ## The 2020 New Zealand General Election
 
-In this exercise we'll look at the results from the 2020 New Zealand general election,
-and look at how the 72 electorates (regions) cluster together based on the party
-and candidate votes, or both combined.
+In this exercise we'll look at the results from the 2020 New Zealand general election, and look at how the 72 electorates (regions) cluster together based on the party and candidate votes, or both combined.
 
-In New Zealand general elections there are 65 'General' electorates (regions) and 7
-Maori electorates. Each voters is assigned to one of these electorates, and has two
-votes: they vote for the political party they wish to represent them in parliament,
-and in addition vote for the person (candidate) they wish to represent them in their
-electorate.
+In New Zealand general elections there are 65 'General' electorates (regions) and 7 Maori electorates. Each voters is assigned to one of these electorates, and has two votes: they vote for the political party they wish to represent them in parliament, and in addition vote for the person (candidate) they wish to represent them in their electorate.
 
-Generally, the candidate they vote for in an electorate is also in a political party,
-but there is no need for an individual to vote for the same party across both their
-votes - indeed, vote splitting, where one votes for a person from a party other than
-the one you vote for is common and encouraged in some electorates.
+Generally, the candidate they vote for in an electorate is also in a political party, but there is no need for an individual to vote for the same party across both their votes - indeed, vote splitting, where one votes for a person from a party other than the one you vote for is common and encouraged in some electorates.
 
 For more information about voting in New Zealand see here:
 
@@ -49,7 +40,7 @@ party  <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/nzelect/2020_party.c
 candidate <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/nzelect/2020_candidate.csv")
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Take a look at the `party` data. You should notice you have the percentage vote for each party (in separate columns) by the electorate (in rows). Summarise how each party does on average across the electorates.
 
@@ -69,7 +60,7 @@ party.hc1 <- party |>
 ggdendrogram(party.hc1)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Try performing hierarchical clustering with average or complete linkage.
 
@@ -89,7 +80,7 @@ party.cl1 |>
 
 We can see that cluster 5 (The Maori electorates) all teend to have a much higher vote for the Maori and Other parties and a lower vote for National, while cluster 1 tends to vote more for National. Cluster 3 are South Auckland electorates that vote very strongly for Labour, while Cluster 2 and 4 vote more strongly for the Greens (two Wellington electorates and Dunedin).
 
-### Try yourself
+### Try it yourself
 
 1. Do the other linkage methods result in the same clustering?
 
@@ -105,7 +96,7 @@ all <- party |> rename_with(~ paste("Party", ., sep=":"), .cols=-Electorate) |>
   )
 ```
 
-### Try yourself
+### Try it yourself
 
 Using the combined voting data `all`, perform hierarchical clustering and investigate which
 electorates tend to vote similarly when both party and candidate votes are considered.
@@ -121,7 +112,7 @@ common characteristics together.
 synth <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/syn-cluster.csv")
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Start by using hierarchical clustering to look at this data. How many clusters look sensible?
 
@@ -139,9 +130,9 @@ km_all <- tibble(k = 1:10) |>
 km_all
 ```
 
-### Try yourself
+### Try it yourself
 
-1. Produce a plot of the within sum of squares against k. How many are clusters do you think
+1. Produce a plot of the within sum of squares against $k$. How many are clusters do you think
 are optimal?
 
 2. Check the scales on each of the variables in `synth`. You should notice they are different!
@@ -156,7 +147,7 @@ scaling <- recipe(synth) |>
 synth.scale <- bake(scaling, synth)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Repeat the clustering procedure. How many clusters make sense now?
 
@@ -170,7 +161,7 @@ clust6 <- pam(synth, k=6)
 clust6.sil <- clust6 |> pluck('silinfo', 'widths') |> as_tibble()
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Create boxplots of the silhouette width by cluster using `clust6.sil`.
 

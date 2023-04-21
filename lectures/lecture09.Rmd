@@ -1,6 +1,6 @@
 ---
 title: 'Lecture 9'
-subtitle: 'K-nearest neighbours, Trees, Forests and Neural Nets'
+subtitle: 'Classification with k-Nearest Neighbours, Trees, Random Forests, and Neural Networks'
 output:
   xaringan::moon_reader:
     css: [default, default-fonts, "custom.css"]
@@ -26,22 +26,23 @@ library(tidyverse)
 library(patchwork)
 library(skimr)
 library(rsample)
+library(recipes)
 
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.dim=c(4.8, 4.5), fig.retina=2, out.width="100%", comment="#>")
 theme_set(theme_minimal())
 
-swiss.train <- read_csv("../data/swiss-train.csv") |>
+swiss.train <- read_csv("https://massey.ac.nz/~anhsmith/data/swiss-train.csv") |>
   mutate(type = factor(type))
-swiss.test <- read_csv("../data/swiss-test.csv") |>
+swiss.test <- read_csv("https://massey.ac.nz/~anhsmith/data/swiss-test.csv") |>
   mutate(type = factor(type))
 
-wine.train <- read_csv("../data/wine-train.csv") |>
+wine.train <- read_csv("https://massey.ac.nz/~anhsmith/data/wine-train.csv") |>
   mutate(Cultivar = factor(Cultivar))
-wine.test <- read_csv("../data/wine-test.csv") |>
+wine.test <- read_csv("https://massey.ac.nz/~anhsmith/data/wine-test.csv") |>
   mutate(Cultivar = factor(Cultivar))
 
-donut.train <- read_csv("../data/donut-train.csv") |>
+donut.train <- read_csv("https://massey.ac.nz/~anhsmith/data/donut-train.csv") |>
   mutate(Class = factor(Class))
 
 covid_all <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/covid19/symptoms.csv") |>
@@ -56,13 +57,11 @@ covid.test  <- testing(split)
 
 ## K-Nearest neighbour classification
 
--   Find $k$ data points in the training set that are most similar to
-    the test observation at hand.
+This method finds the $k$ data points in the training set that are most similar ('near') to the data points in the test set.
 
--   Assign the test case to the most common class for these proximate
-    training data.
+To classify, each test case is assigned to the most common class in the $k$ nearest training data points.
 
--   Similar to missing value imputation.
+This is similar to using k-nearest neighbour for imputing missing values.
 
 ---
 
@@ -70,27 +69,24 @@ covid.test  <- testing(split)
 
 There are two main things to consider:
 
--   Scale. Euclidean distance is often used between observations to
+-   Calculating 'nearness'. Euclidean distance is often used between observations to
     determine the $k$ most similar items.
 
--   What $k$ should be.
+-   Choosing $k$
 
-    - Small $k$ will give larger variation as few observations in the
-    training data are used to predict. But, those observations will
-    be relative close to the test data so will likely have lower bias.
+    - Small $k$ will give greater variation, as fewer observations in the
+    training data are used for each point. But, those observations will
+    be relative close to the test data, so will likely have lower bias.
 
-    - Larger $k$ will give less
-    variation based on the majority vote of a large number of
-    observations from the training data. However, larger $k$ will have
-    bias as we will be comparing the test data to observations that have
-    greater disparity in the pattern of predictors.
+    - Larger $k$ will give less variation because classification is based on the majority vote of a large number of observations from the training data. However, larger $k$ will have more bias, as we will be comparing the test data to observations that have greater disparity in the pattern of predictors.
 
 ---
 
 ## Breaking ties
 
-There are two ways a tie can occur in $k$-nearest
-neighbour classification.
+What happens when the classes are tied for any observation? 
+
+There are two ways a tie can occur in $k$-nearest neighbour classification.
 
 -   Ties between the distances (i.e. more than $k$ observations in the
     training set have the same distance as the nearest $k$ points from
@@ -106,30 +102,32 @@ neighbour classification.
 
 ## K-Nearest neighbours in R
 
-We will use the `tidymodels` framework, utilising the specification
+We will use the `tidymodels` framework:
 
 ```{r, eval=FALSE}
 nearest_neighbor(mode = 'classification', neighbors = 5)
 ```
 
-By default this uses the `kknn` package, which automatically scales
-the predictor variables to have common variance.
+By default, this uses the `kknn` package, which automatically scales the predictor variables to have common variance.
 
-Thus, we need only concern ourselves with determining $k$.
+Thus, we need only concern ourselves with choosing $k$.
 
 ---
 
 ## K-Nearest neighbours for the Wine data
 
 ```{r, message=FALSE}
-library(parsnip)
-library(yardstick)
+library(parsnip); library(yardstick)
+
+# Fit model
 wine.knn1 <- nearest_neighbor(mode="classification", neighbors = 1) |>
   fit(Cultivar ~ ., data=wine.train)
-wine.knn1.pred <- wine.knn1 |>
-  augment(new_data = wine.test)
-wine.knn1.pred |>
-  conf_mat(truth=Cultivar, estimate=.pred_class)
+
+# Get predictions
+wine.knn1.pred <- wine.knn1 |> augment(new_data = wine.test)
+
+# Make confusion matrix
+wine.knn1.pred |> conf_mat(truth=Cultivar, estimate=.pred_class)
 ```
 
 With $k=1$ we find 9 wines get misclassified - all of Cultivar B.
@@ -139,12 +137,17 @@ With $k=1$ we find 9 wines get misclassified - all of Cultivar B.
 ## K-Nearest neighbours for the Wine data
 
 ```{r}
+library(parsnip); library(yardstick)
+
+# Fit model
 wine.knn2 <- nearest_neighbor(mode="classification", neighbors = 20) |>
   fit(Cultivar ~ ., data=wine.train)
-wine.knn2.pred <- wine.knn2 |>
-  augment(new_data = wine.test)
-wine.knn2.pred |>
-  conf_mat(truth=Cultivar, estimate=.pred_class)
+
+# Get predictions
+wine.knn2.pred <- wine.knn2 |> augment(new_data = wine.test)
+
+# Make confusion matrix
+wine.knn2.pred |> conf_mat(truth=Cultivar, estimate=.pred_class)
 ```
 
 With $k=20$ it is quite a bit better - now just 4 wines get misclassified, again Cultivar B.
@@ -159,13 +162,11 @@ class: middle, inverse
 
 ## Classification Trees
 
--   Similar to regression trees.
+-   Similar to regression trees, except that the target variable is categorical.
 
--   Instead of the mean prediction at each node, we use the majority
-    vote of class at each node.
+-   Instead of the mean prediction at each node, we use the 'majority vote' of class at each node.
 
--   Instead of minimising RSS to find the next optimal split, we instead
-    minimise a measure of node impurity.
+-   Instead of minimising RSS to find the next optimal split, we instead minimise a measure of node impurity.
 
 ---
 
@@ -176,77 +177,75 @@ class: middle, inverse
 
 -   Impurity is then a measure of how close the node is to having
     observations equally distributed among all classes.
+    
+-   We want a tree with nodes that have low impurity; that have a big majority in one class.
 
--   We can measure impurity using the Gini splitting index, which measures the chance an
-    observation from the node would be misclassified if all the class
-    labels were randomly reallocated within that node.
+-   There are various ways to measure impurity. One common one is the Gini index.
 
 ---
 
 ## Gini splitting index
 
-Let $\hat{p}_j$ be the proportion of observations
-at a node in class $j$, and let $x$ be an observation at that node. If
-we randomly reallocate observations to classes within the node,
+The Gini index measures impurity as the probability that an observation from the node would be misclassified if all the class labels were randomly reallocated within that node.
+
+Let $\hat{p}_j$ be the proportion of observations at a node in class $j$, and let $x$ be an observation at that node. 
+
+If we randomly reallocate observations to classes within the node,
 $$\begin{aligned} P(x \textsf{ misclassified}) &= \sum_{j=1}^C P(x \textsf{ misclassified}|x \in j)P(x \in j)\\ &= \sum_{j=1}^C (1-\hat{p}_j)\hat{p}_j\\
 &= 1 - \sum_{j=1}^C \hat{p}_j^2.\end{aligned}$$
 
-We try to find splits that minimise the Gini index.
-
----
-
-## Gini splitting index
-
-$$P(x \textsf{ misclassified}) = 1 - \sum_{j=1}^C \hat{p}_j^2.$$
-
--   This is smallest when $\hat{p}_c = 1$ for some $c\in C$ and
-    $\hat{p}_j = 0$ for $j \neq c$.
-
--   This is largest when $\hat{p}_j = \frac{1}{C}$ for all $j$.
-
--   To find the best split, work out the Gini index $g$ at the pair of
-    nodes $l,r$ formed by each split and then minimise their sum,
-    weighted by the proportion $p$ of observations going to each node,
-    $$p(l)g(l) + p(r)g(r).$$
+Gini is smallest when $\hat{p}_c = 1$ for some $c\in C$ and $\hat{p}_j = 0$ for $j \neq c$, and largest when $\hat{p}_j = \frac{1}{C}$ for all $j$.
 
 ---
 
 ## Finding the best split
+
 .left-code[
+
+
 Consider the data
 
-| x | class |
-| --: | --- |
-| 2.8 |  a  |
-| 3.0 |  b  |
-| 3.2 |  a  |
-| 3.4 |  b  |
-| 3.6 |  b  |
+| class | a   | b   | a   | b   | b   |
+| ---   | --- | --- | --- | --- | --- |
+| x     | 2.8 | 3.0 | 3.2 | 3.4 | 3.6 |
 
-There are 4 possibilities for the first split.
 
-Which is best?
+There are 4 possibilities for the first split. The tree algorithm chooses the split with the lowest Gini index.
+
+Each split gives a left node $l$ and a right node $r$. To get the Gini index $g$ of a split, first calculate $g$ for the two nodes, giving $g(l)$ and $g(r)$, and then take the sum weighted by the proportion $p$ of observations in each node. 
+
+$$p(l)g(l) + p(r)g(r)$$
+
 ]
 
 --
 
 .right-plot[
 
-- $x=2.9$ gives a pure left node, and a right node with impurity $1-\left[\frac{1}{4}\right]^2-\left[\frac{3}{4}\right]^2 = \frac{3}{8}$. Total impurity is $\frac{1}{5}\times 0 + \frac{4}{5}\times\frac{3}{8} = \frac{3}{10}$.
+For our four possible splits:
 
-- $x=3.1$ gives a left node with impurity $\frac{1}{2}$ and a right node with impurity $\frac{4}{9}$, giving total impurity $\frac{2}{5}\times\frac{1}{2} + \frac{3}{5}\times\frac{4}{9} = \frac{7}{15}.$
+- Split at $x=2.9$        
+Left node impurity is perfect $g(l)=0$      
+Right node impurity $g(r) = 1-\left[\frac{1}{4}\right]^2-\left[\frac{3}{4}\right]^2 = \frac{3}{8}$       
+Total impurity $= \frac{1}{5}\times 0 + \frac{4}{5}\times\frac{3}{8} = \frac{3}{10} = \color{darkorange}{0.3}$
 
-- $x=3.3$ gives left node impurity $\frac{4}{9}$ and a pure right node, giving total impurity $\frac{3}{5}\times\frac{4}{9} + \frac{2}{5}\times0 = \frac{4}{15}.$
+- Split at $x=3.1$    
+$g(l)=\frac{1}{2}$ ; $g(r)=\frac{4}{9}$ ; Total $= \frac{2}{5} \times \frac{1}{2} + \frac{3}{5} \times \frac{4}{9} = \frac{7}{15} = \color{darkorange}{0.47}$
 
-- $x=3.5$ gives left node impurity $\frac{1}{2}$ and a pure right node, giving total impurity $\frac{4}{5}\times\frac{1}{2} + \frac{1}{5}\times0 = \frac{2}{5}.$
+- Split at $x=3.3$       
+$g(l)=\frac{4}{9}$; $g(r)=0$ ; Total $=\frac{3}{5}\times\frac{4}{9} + \frac{2}{5}\times0 =\frac{4}{15} = \color{darkorange}{0.27}$
 
-So $x=3.3$ is the best split.
+- Split at $x=3.5$       
+$g(l)=\frac{1}{2}$; $g(r)=0$ ; Total $=\frac{4}{5}\times\frac{1}{2} + \frac{1}{5}\times0 =\frac{2}{5} = \color{darkorange}{0.4}$
+
+$x=3.3$ is the best split because it achieves the lowest impurity.
 ]
 
 ---
 
+## Classification tree for Swiss bank notes
+
 .left-code[
-## Classification trees for Swiss bank notes
 
 ```{r}
 swiss.rp <- decision_tree(
@@ -276,8 +275,9 @@ swiss.rp |>
 
 ---
 
-.left-code[
 ## Classification tree for Swiss bank notes
+
+.left-code[
 
 ```{r}
 swiss.rp2 <- decision_tree(
@@ -304,9 +304,10 @@ swiss.rp2 |> extract_fit_engine() |> text()
 
 ---
 
-.left-code[
 ## Classification tree for Swiss bank notes
 
+
+.left-code[
 ```{r}
 swiss.rp2 <- decision_tree(
   mode='classification',
@@ -324,7 +325,7 @@ swiss.rp2.pred |>
 ]
 
 .right-plot[
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, fig.dim=c(5, 4)}
 swiss.all <- bind_rows(list(test=swiss.test, train=swiss.train), .id='data')
 swiss.grid <- expand_grid(margin=seq(7.1,12.8,by=0.05),
                           diagonal=seq(137.5, 142.5, by=0.05))
@@ -344,15 +345,13 @@ ggplot(swiss.all) +
 
 ## Random forests for classification
 
-- Forests for classification are just collections of classification trees.
+- Random forests are just collections ('ensembles') of tree many tree models.
 
 - Classification is done by passing each test observation through each tree.
 
-- This gives the most likely class from each tree.
+- The predictions from the trees are treated as votes for the most likely class for the forest.
 
-- These are treated as votes for the most likely class for the forest.
-
-    - Can result in ties, which are usually resolved at random.
+- There can be ties, which are usually resolved at random.
 
 ---
 
@@ -365,18 +364,18 @@ class: middle, inverse
 .left-code[
 ## Neural networks for classification
 
--   Neural networks attempt to model the brain by assembling a large
+Neural networks attempt to model the brain by assembling a large
     number of interconnected nodes (neurons) which 'fire' or output only
     if the input is large enough.
 
--   Nodes are ordered into levels and all nodes on one level feed into
+Nodes are ordered into levels and all nodes on one level feed into
     the next level.
 
-    -   Input nodes are the input variables.
+-   Input nodes are the input variables.
 
-    -   These feed into one or more hidden layers or derived features.
+-   These feed into one or more hidden layers or derived features.
 
-    -   The derived features feed into the output node(s).
+-   The derived features feed into the output node(s).
 ]
 
 .right-plot[
@@ -390,67 +389,59 @@ nnet_plot()
 
 ## Neural networks for classification
 
--   A linear combination of nodes at the previous layer feed through an activation function
+A linear combination of nodes at the previous layer feed through an activation function
     $\phi$ to nodes in the current layer.
 
--   The default activation function is the sigmoid, also used for
-    logistic/multinomial regression
-    $$\phi(\theta) = \frac{1}{1+e^{-\theta}}.$$
+The default activation function is the sigmoid, also used for logistic/multinomial regression.
+    $$\phi(\theta) = \frac{1}{1+e^{-\theta}}$$
 
--   This gives the 'firing' style behaviour as $\theta$ moves through
-    zero.
+This gives the 'firing' style behaviour as $\theta$ moves through zero.
 
 ---
 
 ## Neural networks for classification
 
--   We need to define
+We need to define:
 
-    -   The number of hidden layers.
+-   The number of hidden layers.
 
-    -   The number of derived features in the hidden layers.
+-   The number of derived features in the hidden layers.
 
-    -   The activation functions from one layer to the next.
+-   The activation functions from one layer to the next.
 
--   There is little theory to assist us with these, but some simple
-    criteria are
+There is little theory to assist us with these, but some simple guides are:
 
-    -   Use a single hidden layer.
+-   Use a single hidden layer.
 
-    -   Use $\lceil p/2\rceil$ derived features, where $p$ is the
-        effective number of predictors.
+-   Use $\lceil p/2\rceil$ derived features, where $p$ is the effective number of predictors.
 
-    -   The sigmoid activation function is usually used.
+-   The sigmoid activation function is usually used.
 
 ---
 
 ## Neural networks for classification
 
--   The derived features $z_k$ are defined in terms of the predictors
+The derived features $z_k$ are defined in terms of the predictors
     $x_p$ by
     $$z_k = \phi(\alpha_{0k} + \alpha_{1k}x_1 + \cdots + \alpha_{pk}x_p).$$
 
--   The outcome nodes for classification are the probability of a class,
+The outcome nodes for classification are the probability of a class,
     so are also defined using the sigmoid function
     $$\hat{p_c} = \phi(\beta_{0c} + \beta_{1c}z_1 + \cdots + \beta_{kc}z_k).$$
 
--   The $\alpha$ and $\beta$ terms (the *weights*) are then estimated from
+The $\alpha$ and $\beta$ terms (the *weights*) are then estimated from
     training data.
 
 ---
 
 ## Neural networks for classification
 
-The actual network used for
-classification and the method of fitting the weights $\alpha$ and
+The actual network used for classification and the method of fitting the weights $\alpha$ and
 $\beta$ terms differs based on the number of classes.
 
--   With 2 classes, a single output node $\hat{p}$ is used, and the
-    cross entropy information criterion is minimised
-    $$I_E = \hat{p} \log(\hat{p}).$$
+With 2 classes, a single output node $\hat{p}$ is used, and the cross entropy information criterion is minimised $$I_E = \hat{p} \log(\hat{p})$$.
 
--   With 3 or more classes, an output node per class is used, and
-    maximum likelihood is used to estimate the weights.
+With 3 or more classes, an output node per class is used, and maximum likelihood is used to estimate the weights.
 
 ---
 
@@ -462,32 +453,64 @@ We'll utilise the `mlp()` specification from the `tidymodels` framework:
 mlp(mode='classification', hidden_units=2, penalty=0.1, epochs=1000)
 ```
 
--   The `hidden_units` is the number of hidden nodes.
+-   `hidden_units` is the number of hidden nodes.
 
 -   `penalty` is the decay rate for the back propagation algorithm.
 
 -   `epochs` is the number of iterations.
 
--   Remember that large numeric inputs should be scaled first.
+Remember that numeric inputs should be scaled first.
 
 ---
 
 ## Neural network classification of Swiss data
 
+.small-font.left-code[
+
 ```{r, message=FALSE}
-library(recipes)
-swiss.rec <- recipe(type ~ ., data=swiss.train) |>
+swiss.rec <- recipe(
+  type ~ ., data=swiss.train ) |>
   step_normalize(all_numeric_predictors()) |>
   prep(swiss.train)
 
 set.seed(2001)
-swiss.nn <- mlp(mode='classification', hidden_units=2, epochs=500) |>
-  fit(type ~ ., data=bake(swiss.rec, swiss.train))
 
-swiss.nn.pred <- swiss.nn |> augment(new_data=bake(swiss.rec, swiss.test))
+swiss.nn <- mlp(
+  mode='classification', 
+  hidden_units=2, epochs=500 
+  ) |>
+  fit(
+    type ~ ., 
+    data=bake(swiss.rec, swiss.train) 
+    )
 
-swiss.nn.pred |> conf_mat(truth=type, estimate=.pred_class)
+swiss.nn |> augment(
+  new_data=bake(swiss.rec, swiss.test)
+  ) |> 
+  conf_mat(truth=type, estimate=.pred_class)
 ```
+]
+
+
+
+.right-plot[
+```{r, echo=FALSE, message=FALSE, fig.dim=c(5, 4)}
+ggplot() +
+  geom_tile(data=swiss.nn |> 
+              augment(bake(swiss.rec, swiss.grid)) |> 
+                        rename(`Predicted class` = .pred_class),
+            mapping=aes(x=margin, y=diagonal, fill=`Predicted class`), alpha=0.3) +
+  # geom_tile(data=swiss.nn |> augment(bake(swiss.rec, swiss.grid)),
+  #           mapping=aes(x=margin, y=diagonal, fill=.pred_genuine), alpha=0.3) +
+  geom_point(data= bake(swiss.rec, swiss.all) |> 
+               add_column(data=swiss.all$data) |> 
+               rename(`True class` = type,
+                      `Data set` = data),
+             mapping=aes(x=margin, y=diagonal, col=`True class`, alpha=`Data set`)) +
+  scale_alpha_manual(values = c(test=1, train=0.3)) 
+
+```
+]
 
 ---
 
@@ -511,17 +534,13 @@ covid.train |>
   mutate(p=n/sum(n)) |>
   filter(value != "No") |>
   ggplot() +
-  geom_col(
-    mapping=aes(
-      y=name,
-      x=p
-      )
-    ) +
-  facet_wrap(vars(Status)) +
-  labs(x=NULL, y=NULL) +
-  scale_x_continuous(
-    labels=scales::label_percent()
-  )
+    aes(y=name,x=p) +
+    geom_col() +
+    facet_wrap(vars(Status)) +
+    labs(x=NULL, y=NULL) +
+    scale_x_continuous(
+      labels=scales::label_percent()
+    )
 ```
 ]
 
@@ -610,7 +629,7 @@ covid.lr.pred <- covid.lr |> augment(covid.test)
 .left-code[
 ## Symptoms of COVID-19: ROC curves
 
-```{r roc_curves, eval=FALSE}
+```{r roc_curves, eval=FALSE, message=FALSE}
 all <- bind_rows(
   list(forest=covid.rf.pred,
        logistic=covid.lr.pred,
@@ -628,11 +647,12 @@ all |>
   theme(legend.position='top')
 ```
 
-The logistic regression is almost uniformly best.
+Logistic regression looks best.
+
 ]
 
 .right-plot[
-```{r, ref.label="roc_curves", echo=FALSE, message=FALSE}
+```{r, ref.label="roc_curves", echo=FALSE, warning=FALSE}
 ```
 ]
 
@@ -640,32 +660,34 @@ The logistic regression is almost uniformly best.
 
 ## Dealing with class imbalance
 
-- None of the models are any good at predicting confirmed cases of COVID-19.
+None of the models is any good at predicting confirmed cases of COVID-19.
 
-- We could use a different threshold (like we did with the logistic) to move along
+We could use a different prediction threshold (like we did with the logistic) to move along
 the ROC curve. But the ROC curve as it is shows logistic regression best.
 
-- Another way to deal with class imbalance is to re-balance the classes prior to
+Another way to deal with class imbalance is to re-balance the classes prior to
 training.
 
-- We could *downsample* the 'not a case' group, and/or *upsample* the 'Confirmed' group.
+We could *downsample* the 'not a case' group, and/or *upsample* the 'Confirmed' group.
 
-- One method is to use SMOTE: Synthetic minority over-sampling technique.
+One method is to use SMOTE: Synthetic minority over-sampling technique.
 
 ---
 
 ## SMOTE: Over-sampling
 
-- The idea is to generate some more observations in the under-sampled class using
+The idea is to generate some more observations in the under-sampled class using
 $k$-nearest neighbour sampling.
 
-- We can optionally also downsample the over-sampled class.
+We can optionally also downsample the over-sampled class.
 
-- This then gives better balance, which may help performance on the under-sampled class.
+This then gives better balance, which may help performance on the under-sampled class.
 
-- The undersampled class is often the interesting one!
+The undersampled class is often the interesting one!
 
-    - See here for more: https://jair.org/index.php/jair/article/view/10302/24590
+See here for more: https://jair.org/index.php/jair/article/view/10302/24590
+
+Use with caution SMOTE and any other method that involves making up syntheic data! 
 
 ---
 
@@ -675,16 +697,15 @@ $k$-nearest neighbour sampling.
 We use `step_smotenc()` from the `themis` package which handles categorical predictors.
 
 ```{r, message=FALSE}
-library(themis)
-set.seed(1234)
+library(themis); set.seed(1234)
 rec <- recipe(Status ~ ., data=covid.train) |>
-  step_smotenc(Status,
-               over_ratio = 1,
-               skip=TRUE) |>
+  step_smotenc(Status, over_ratio=1, skip=TRUE) |>
   prep(covid.train)
 
 covid.balanced <- rec |> bake(new_data=NULL)
 covid.balanced |> count(Status)
+
+covid.train |> count(Status)
 ```
 ]
 
@@ -750,39 +771,33 @@ class: middle, inverse
 
 ## Classification summary
 
--   Some methods require quantitative predictors:
+Some classification methods require quantitative predictors:
 
-    -   Linear discriminant analysis, kernel discriminant analysis,
-        $k$-nearest neighbours.
+-   Linear discriminant analysis, kernel discriminant analysis, $k$-nearest neighbours.
 
--   Some require all predictors on the same scale.
+Some classification methods  require all predictors on the same scale.
 
-    -   $k$-nearest neighbours. This is handled automatically by `nearest_neighbour` specification.
+-   $k$-nearest neighbours. This is handled automatically by `nearest_neighbour` specification.
 
-    -   Neural networks. Scale large predictors first.
+-   Neural networks. Scale large predictors first.
 
--   Some use a linear combination of predictors.
+Some classification methods use a linear combination of predictors.
 
-    -   Logistic or Multinomial regression.
+-   Logistic or Multinomial regression.
 
--   Some have strong assumptions.
+Some classification methods have strong assumptions.
 
-    -   LDA, Naive Bayes, Logistic or Multinomial regression.
+-   LDA, Naive Bayes, Logistic or Multinomial regression.
+
 
 ---
 
 ## Classification summary
 
--   Methods with the greatest number of assumptions will do well when
-    those assumptions hold.
+Methods with strong assumptions will do well when the assumptions hold, and can do very poorly if the assumptions do not hold.
 
--   They can do very poorly if the assumptions do not hold.
+In practice we don't know for certain whether the assumptions hold, so many data miners prefer to use more flexible tools such as trees, forests or neural networks.
 
--   In practice we don't know for certain whether the assumptions hold,
-    so many data miners prefer to use more flexible tools such as
-    trees, forests or neural networks.
+If classes are imbalanced, then your 'baseline' level for predictive accuracy is "assign everything to the biggest group".
 
--   If classes are imbalanced, then your 'baseline' level for predictive
-    accuracy is "assign everything to the biggest group".
-
--   Rebalancing the classes might help in some cases, either through under or over-sampling, or a combination.
+Rebalancing the classes might help in some cases, either through under or over-sampling, or a combination.
