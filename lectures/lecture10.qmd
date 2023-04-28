@@ -3,10 +3,14 @@ title: "Cluster Analysis"
 subtitle: "161324 Data Mining | Lecture 10"
 format: 
   revealjs:
+    transition: fade
     theme: [default, myquarto.scss]
     slide-number: c/t  
-    footer: "161324 Data Mining | Lecture 10 | Cluster Analysis"
     logo: graphics/L_Color.png
+    styles:
+      - revealjs.dark:
+        background-color: #222
+        color: #fff
 execute:
   echo: true
 ---
@@ -47,6 +51,9 @@ Cluster analysis is a broad range of methods for creating a *new* categorical va
 
 The goal is to classify our cases into groups that have *high within-group similarity* and *low between-group similarity*, with respect to $\mathbf{X}$.
 
+::: footer
+Lecture 10 | Cluster Analysis
+:::
 
 ---
 
@@ -79,7 +86,12 @@ Regardless of the situation, cluster analysis will *always* produce groups!
 :::
 
 
-# The $k$-means clustering algorithm
+
+# The $k$-means clustering algorithm {.background-black}
+
+::: footer
+$k$-means cluster analysis
+:::
 
 ## The $k$-means algorithm {.smaller}
 
@@ -121,6 +133,10 @@ km.ani <- kmeans.ani(col = c("#004B8D", "#E4A024", "#9A3324"), pch=16)
 
 ::::
 
+::: footer
+$k$-means cluster analysis
+:::
+
 ## European protein composition {.scrollable}
 
 This dataset contains the proportions (as percentages) of each of nine major sources of protein in the diets of 25 European countries, some time prior to the 1990s.
@@ -132,6 +148,9 @@ food <- read_csv("https://massey.ac.nz/~anhsmith/data/food.csv")
 kable(food) |> kable_styling(font_size = 18)
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein composition 
 
@@ -150,6 +169,9 @@ food |> ggplot() +
         legend.position = "top")
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein: $k$-means 
 
@@ -167,6 +189,9 @@ km_fit_k3_s1 <- km_spec_k3_s1 |>
 
 km_fit_k3_s1
 ```
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein: $k$-means 
 
@@ -193,6 +218,10 @@ km_fit_k3_s1 |>
 
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
+
 ## European protein: $k$-means 
 
 Now, let's do 50 random starts.
@@ -209,6 +238,9 @@ km_fit_k3 <- km_spec_k3 |>
 
 km_fit_k3 
 ```
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein: $k$-means 
 
@@ -235,6 +267,9 @@ km_fit_k3 |>
 
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein: $k$-means 
 
@@ -252,6 +287,9 @@ km_fit_k2 <- km_spec_k2 |>
 
 km_fit_k2
 ```
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein: $k$-means 
 
@@ -278,7 +316,9 @@ km_fit_k2 |>
 
 ```
 
-
+::: footer
+$k$-means cluster analysis
+:::
 
 ## European protein: $k$-means 
 
@@ -298,8 +338,11 @@ km_fit_k4 <- km_spec_k4 |>
 
 km_fit_k4
 ```
+::: footer
+$k$-means cluster analysis
+:::
 
-## European protein;: $k$-means 
+## European protein: $k$-means 
 
 Or 4?
 
@@ -324,6 +367,9 @@ km_fit_k4 |>
 
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
 
 ## How to choose $k$? 
 Increasing $k$ will always decrease with within-group error. 
@@ -403,6 +449,10 @@ fviz_nbclust(meat,
              method='wss', 
              k.max = 5)
 ```
+
+::: footer
+$k$-means cluster analysis
+:::
 
 ## The 'silhouette' method {.smaller}
 
@@ -486,6 +536,10 @@ If $s(i)$ is near 1, the point clearly belongs in its cluster.
 If $s(i)$ is near zero, then the point is "on the fence".       
 If $s(i)$ is negative, then the point is more similar to members of another cluster.
 
+::: footer
+Silhouette
+:::
+
 
 ## The 'silhouette' method
 
@@ -516,6 +570,9 @@ kplot
 ```
 :::
 
+::: footer
+Silhouette
+:::
 
 ## Using silhouette to choose $k$
 
@@ -535,6 +592,10 @@ fviz_nbclust(meat,
 ```
 
 By this criterion, we'd choose $k$ = 3. 
+
+::: footer
+Silhouette
+:::
 
 ## Leave-one-out silhouette 
 
@@ -578,6 +639,9 @@ food_cv_metrics |>
   xlab("Number of clusters") 
 ```
 
+::: footer
+Silhouette
+:::
 
 ## $k$-means for more than two variables  {.smaller}
 
@@ -606,6 +670,10 @@ food |> select(-Country) |> ggpairs(diag = list(continuous="barDiag"), gaps=0)
 
 ::::
 
+::: footer
+$k$-means cluster analysis
+:::
+
 ## Choosing $k$ for 9 normalised variables
 
 ```{r}
@@ -629,6 +697,9 @@ food_norm |>
                k.max = 10)
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
 
 
 ## Visualising cluster analysis for nine variables
@@ -651,6 +722,10 @@ food |>
   ggpairs(mapping=aes(colour = Cluster))
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
+
 ## Summary: $k$-means
 
 ::: {.increment}
@@ -671,12 +746,326 @@ food |>
 
 :::
 
+::: footer
+$k$-means cluster analysis
+:::
 
-# Hierarchical clustering
+
+# Hierarchical cluster analysis {.background-black}
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+## Hierarchical cluster analysis {.smaller}
+
+::::{.columns}
+
+:::{.column}
+
+Hierarchical cluster analysis uses a different approach to $k$-means.
+
+:::{.incremental}
+- Is deterministic rather than stochastic (no random starts)
+- Produces a 'dendrogram' to show the hierarchical structure
+:::
+
+:::
 
 
-## Hierarchical clustering {.scrollable}
+:::{.column}
 
+```{r}
+#| echo: false
+#| fig-height: 6
+#| fig-width: 4
+
+fc <- food_norm |> dist() |> hclust()
+
+fd <- fc |> 
+  fviz_dend(horiz=T) +
+  ylim(food_norm |> dist() |> max(), -3) +
+  ylab("Distance") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+fd
+```
+
+:::
+
+::::
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+## Hierarchical cluster analysis {.smaller}
+
+::::{.columns}
+
+:::{.column}
+
+Hierarchical cluster analysis uses a different approach to $k$-means.
+
+- Is deterministic rather than stochastic (no random starts)
+- Produces a 'dendrogram' to show the hierarchical structure
+- Does not require prior choice of $k$; can 'cut' the dendrogram at any level
+
+
+:::
+
+
+:::{.column}
+
+```{r}
+#| echo: false
+#| fig-height: 6
+#| fig-width: 4
+#| fig-show: animate
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=2,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=2") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=3,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=3") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=4,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=4") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=5,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=5") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=6,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=6") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=7,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=7") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=8,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=8") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=9,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=9") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+fc |> 
+    fviz_dend(horiz=T,
+              k=10,
+              k_colors = c("jco"),
+              rect = TRUE, 
+              rect_border = "jco", 
+              rect_fill = TRUE) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    ggtitle("k=10") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+
+# THIS DOESN'T WORK BECAUSE IDFK
+# for(i in 2:8) {
+#   fc |> 
+#     fviz_dend(horiz=T,
+#               k=i,
+#               k_colors = c("jco"),
+#               rect = TRUE, 
+#               rect_border = "jco", 
+#               rect_fill = TRUE) +
+#     ylim(food_norm |> dist() |> max(), -3) +
+#     ylab("Distance") +
+#     ggtitle(paste0("k=",i)) +
+#     theme(plot.title = element_text(hjust = 0.5))
+# }
+
+```
+
+:::
+
+::::
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+
+## Hierarchical cluster analysis {.smaller}
+
+::::{.columns}
+
+:::{.column}
+
+Hierarchical cluster analysis uses a different approach to $k$-means.
+
+- Is deterministic rather than stochastic (no random starts)
+- Produces a 'dendrogram' to show the hierarchical structure
+- Does not require prior choice of $k$; can 'cut' the dendrogram at any level
+- Let's look at how it works with a subset of 6 countries
+
+```{r}
+# Select 6 countries
+fn6 <- food_norm |> 
+  filter(
+    rownames(food_norm) %in% 
+      c("Yugoslavia","Romania","Bulgaria",
+        "Albania","Italy","Greece")
+    )
+```
+
+:::
+
+:::{.column}
+
+```{r}
+#| echo: false
+#| fig-height: 6
+#| fig-width: 4
+#| fig-show: animate
+
+fc |> fviz_dend(
+  horiz=T,
+  k=4,
+  k_colors = c("lightgrey","lightgrey","lightgrey","black"),
+  # label_cols=c("lightgrey","lightgrey","lightgrey","black"),
+  rect = TRUE,
+  color_labels_by_k = T,
+  rect_border = F,
+  rect_fill = F) +
+    ylim(food_norm |> dist() |> max(), -3) +
+    ylab("Distance") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+:::
+
+::::
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+## Hierarchical cluster analysis 
+
+
+```{r}
+#| echo: false
+#| tbl-cap: "Data matrix"
+ 
+fn6 |> round(2) |> select(RedMeat:Cereals) |> kable() |> kable_styling(font_size = 12)
+```
+
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+
+library(modelsummary)
+
+dist_fun <- function(x) {
+  out <- dist(x, diag = T, upper = T) |> 
+    as.matrix() |> as.data.frame() 
+  datasummary_correlation_format(
+    out,
+    fmt = 2,
+    upper_triangle = ".",
+    diagonal = ".")
+}
+
+fn6 |> datasummary_correlation(method=dist_fun) |>  kable_styling(font_size = 12)
+
+```
+
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 4
+#| fig-cap: "Principal Component Analysis"
+
+library("FactoMineR")
+pca_fn6 <- fn6 |> PCA(graph = FALSE)
+fviz_pca_ind(pca_fn6, repel = TRUE) +
+  ggtitle("")
+```
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+## Distance matrix
+
+![](/graphics/cluster_flow.png)
+
+## Hierarchical cluster analysis {.scrollable}
 
 ```{r}
 dist(food_norm) |> as.matrix() |> round(2) |> 
@@ -684,12 +1073,9 @@ dist(food_norm) |> as.matrix() |> round(2) |>
 ```
 
 
-## Hierarchical clustering
 
+# Stray stuff {.background-black}
 
-Hierarchical clustering is a very different approach to $k$-means.
-
-![](/graphics/agglom.gif){.fragment}
 ## Observable
 
 ```{ojs}
@@ -699,15 +1085,11 @@ food = FileAttachment("../data/food.csv").csv()
 ```
 
 
-
 ## Using gap analysis to choose $k$
-
 
 ```{r}
 
-
 # fviz_gap_stat(gap_stat)
-
 
 ```
 

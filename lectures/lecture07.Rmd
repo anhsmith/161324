@@ -484,6 +484,7 @@ Hence:
 
 $$\begin{aligned}f_1(x_0) > f_2(x_0) &\Leftrightarrow& \frac{1}{\sqrt{2 \pi} s} e^{ - (x_0 - \bar x_1)^2/(2 s^2) } > \frac{1}{\sqrt{2 \pi} s} e^{ - (x_0 - \bar x_2)^2/(2 s^2) }\\&\Leftrightarrow& e^{ - (x_0 - \bar x_1)^2/(2 s^2) } > e^{ - (x_0 - \bar x_2)^2/(2 s^2) }\\&\Leftrightarrow&  - (x_0 - \bar x_1)^2/(2 s^2)  >  - (x_0 - \bar x_2)^2/(2 s^2) \\&\Leftrightarrow&   (x_0 - \bar x_1)^2  <   (x_0 - \bar x_2)^2 \\&\Leftrightarrow&   |x_0 - \bar x_1|  <   |x_0 - \bar x_2| \\\end{aligned}$$
 
+
 ---
 
 ## Classifying a test case
@@ -525,7 +526,7 @@ or, equivalently,
 
 This can be thought of as there being a decision boundary where one group becomes more probable than the other. 
 
-With $C \ge 3$ classes, we have more than one boundaries.
+With $C \ge 3$ classes, we have two boundaries.
 
 For two or more features:       
 - Classes are assumed to have a common variance-covariance matrix.    
@@ -655,13 +656,13 @@ title(expression(paste(pi[1],"=2",pi[2],"=2/3")),cex.main=1.5)
 
 Linear discriminant analysis is implemented using `lda` function in R.
 
-We will use the `discrim_linear()` wrapper function available in the`parsnip` add-on package `discrim`.
+We will use the `discrim_linear()` wrapper function available in the `parsnip` add-on package `discrim`.
 
 Prior probabilities can be specified using the `prior` argument to `set_engine()`. The proportions in the data are used unless other priors are specified.
 
 Classification of test cases is done using `predict` or `augment` in the usual manner.
 
-The `conf_mat()` function from `yardstick` can be used to evaluate performance. In addition the `accuracy()` function gives classification rates.
+The `conf_mat()` function from `yardstick` can be used to evaluate performance. The `accuracy()` function gives classification success rates.
 
 ---
 
@@ -1261,7 +1262,7 @@ naive_Bayes(engine='naivebayes')
 .left-code[
 ## Naive Bayes and Jam Donuts
 
-```{r}
+```{r, warning=F, message=FALSE}
 donut.nB <- naive_Bayes(
     engine="naivebayes"
     ) |>
@@ -1279,7 +1280,7 @@ The assumption of independence is therefore reasonable.
 ]
 
 .right-plot[
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(patchwork)
 # Now compute both and then calculate accordingly...
 x1_dens <- map_dfr(donut.nB$fit$tables$x1, broom::tidy, .id='Class')
@@ -1310,7 +1311,7 @@ g3 + plot_spacer() + g1 + g2 + plot_layout(nrow=2, ncol=2, widths=c(5, 1), heigh
 .left-code[
 ## Naive Bayes and Jam Donuts
 
-```{r}
+```{r, warning=F, message=FALSE}
 donut.nB <- naive_Bayes() |>
   set_engine("naivebayes",        #<<
              usekernel=FALSE) |> #<<
@@ -1329,7 +1330,7 @@ density is still much higher for jam.
 ]
 
 .right-plot[
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(patchwork)
 
 # Now compute both and then calculate accordingly...

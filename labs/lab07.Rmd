@@ -55,7 +55,7 @@ syn3.test  <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/syn-class3-test.
 
 Each dataset has 3 predictor columns `x1`, `x2`, `x3` and a class column `group`.
 
-### Try yourself
+### Try it yourself
 
 1. Explore the training set data using data summaries (e.g. using `skim()`) or tables.
 
@@ -83,7 +83,7 @@ And can compute accuracy (i.e. classification rate) using:
 pred_lda1 |> accuracy(truth=group, estimate=.pred_class)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Fit LDA models to the `syn2.train` and `syn3.train` datasets.
 2. Obtains predictions for the `syn2.test` and `syn3.test` datasets.
@@ -118,7 +118,7 @@ And then evaluate our predictive accuracy:
 pred1 |> group_by(model) |> accuracy(truth=group, estimate=.pred_class)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Fit naive Bayes and KDA models to the `syn2.train` and `syn3.train` datasets.
 2. Perform predictions for each model on the respective test datasets.
@@ -168,7 +168,7 @@ glass.test |> count(Type)
 
 We see it is dominated by building windows, so one could make a pretty accurate classifier just by saying "every bit of glass is a building window"! This would have a training accuracy of 116/160=72.5%, so is a useful baseline.
 
-### Try yourself
+### Try it yourself
 
 1. Try altering the above density plots to fill using `Type` - it may be that some of the skew is due to the different window types.
 
@@ -189,7 +189,7 @@ The accuracy here isn't too bad, but if you look at the confusion matrix, you ca
 glass.pred.lda |> conf_mat(truth=Type, estimate=.pred_class)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Try fitting KDA and naive bayes models to this data.
 2. Assess their accuracy and compute confusion matrices.
