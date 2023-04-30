@@ -48,12 +48,32 @@ One such technique is **logistic regression**.
 
 ---
 
-## Introduction to Logistic Regression
+## Generalised Linear Models
 
 Logistic regression is one of a class of methods known as **generalised linear models** (GLMs).     
-GLMs are closely related to linear regression.
 
-A critical difference is that the response (target) variable $y$ need not be distributed according to a normal distribution.
+GLMs are closely related to linear regression, with two important generalisations.
+
+- The response (target) variable $y$ need not be distributed according to a normal distribution. We can assume a Bernoulli, Poisson, Negative Binomial, Gamma, or any other member of the "exponential" family of distrbutions for $y$.
+
+- We may fit a linear model to the mean of $y$ after applying a transformation. The form of the tranformation is called the "link function".
+
+--
+
+The standard linear model: $\ \ \ \ y \sim \text{Normal}(\mu, \sigma^2) \ \ \ \ \ \ \ \mu = \beta_0 + \beta_1x_1 + \beta_2x_2 + ... + \beta_px_p$
+
+A generalised linear model: $\ \ \ \ y \sim \phi(\theta) \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ g(\theta) = \beta_0 + \beta_1x_1 + \beta_2x_2 + ... + \beta_px_p$
+
+where $\phi$ is the assumed distribution for the data given parameters $\theta$, and $g()$ is a link function (e.g., the logit or log function).
+
+--
+
+The standard linear model is just a GLM where $\phi$ is the Normal distribution and $g()$ is the identity function.
+
+---
+
+
+## Introduction to Logistic Regression
 
 Logistic regression can be used when the response variable is **binary** (i.e., it has two classes).     
 The two classes, $j = \{1,2\}$, are labelled '0' and '1', respectively. 
@@ -89,15 +109,15 @@ If $x < -3$ or $x > 7$, we're outside the range $[0,1]$.
 
 ## Introduction to Logistic Regression
 
-A solution is to use a type of sigmoidal function that you met when looking at neural networks.
+A solution is to use a type of sigmoidal link function that you met when looking at neural networks.
 
-We can model probability $p(\mathbf{x})$ via the **logistic** (or sigmoidal) function: $$p(\mathbf{x}) = \frac{1}{1 + e^{-\theta(\mathbf{x})}}$$ where $\theta(\mathbf{x})$ is a **linear predictor**, given by
-    $$\theta(\mathbf{x}) = \beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p.$$
+We can model probability $p(\mathbf{x})$ via the **logistic** (or sigmoidal) function: $$p(\mathbf{x}) = \frac{1}{1 + e^{-g(\mathbf{x})}}$$ where $g(\mathbf{x})$ is a **linear predictor**, given by
+    $$g(\mathbf{x}) = \beta_0 + \beta_1 x_1 + \cdots + \beta_p x_p.$$
 
 *Importantly, the transformation of the linear predictor via the logistic function ensures that $p(\mathbf{x})$ stays within the range $[0,1]$ .*
 
 The inverse of the logistic function is the **logit** or log-odds function
-    $$\theta(\mathbf{x}) = \mathsf{logit}(p(\mathbf{x})) = \log\left(\frac{p(\mathbf{x})}{1-p(\mathbf{x})}\right).$$
+    $$g(\mathbf{x}) = \mathsf{logit}(p(\mathbf{x})) = \log\left(\frac{p(\mathbf{x})}{1-p(\mathbf{x})}\right).$$
 
 ---
 
@@ -106,20 +126,20 @@ The inverse of the logistic function is the **logit** or log-odds function
 ```{r logistic, message=FALSE, echo=FALSE, fig.dim=c(7, 3)}
 g1 <- ggplot() +
   geom_function(fun = ~1/(1+exp(-.x)), xlim=c(-5, 5)) +
-  labs(x = expression(theta),
+  labs(x = expression(eta),
        y = expression(p),
        title = "logistic function")
 
 g2 <- ggplot() +
   geom_function(fun = ~log(.x/(1-.x)), xlim=c(0.00001, 0.99999)) +
   labs(x = expression(p),
-       y = expression(theta),
+       y = expression(eta),
        title = "logit function")
 
 g1+g2
 ```
 
-Any value of linear predictor $-\infty \le \theta \le \infty$
+Any value of linear predictor $-\infty \le \eta \le \infty$
     corresponds to a feasible probability $0 < p < 1$.
 
 ---
@@ -333,12 +353,12 @@ Then assign to class indicated by $y=1$ if and only if $\mathsf{P}(y=1 | \mathbf
 
 ## Logistic regression and classification rules
 
-Recall that $$p(\mathbf{x}_0) = \frac{1}{1 + e^{-\theta(\mathbf{x}_0)}}$$ 
+Recall that $$p(\mathbf{x}_0) = \frac{1}{1 + e^{-g(\mathbf{x}_0)}}$$ 
 where
-    $\theta(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) = \beta_0 + \beta_1 x_{01} + \cdots + \beta_p x_{0p}$.
+    $g(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) = \beta_0 + \beta_1 x_{01} + \cdots + \beta_p x_{0p}$.
 
 Classification to class $y=1$ occurs if and only if
-    $$\begin{aligned}\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12 &\Leftrightarrow& \tfrac{1}{1 + e^{-\theta(\mathbf{x}_0)}} \ge \tfrac12 \\ &\Leftrightarrow& e^{-\theta(\mathbf{x}_0)} \le 1 \\ &\Leftrightarrow& \theta(\mathbf{x}_0) \ge 0 \\ &\Leftrightarrow& \beta_0 + \beta_1 x_{01} + \cdots + \beta_p x_{0p} \ge 0 \end{aligned}$$
+    $$\begin{aligned}\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12 &\Leftrightarrow& \tfrac{1}{1 + e^{-g(\mathbf{x}_0)}} \ge \tfrac12 \\ &\Leftrightarrow& e^{-g(\mathbf{x}_0)} \le 1 \\ &\Leftrightarrow& g(\mathbf{x}_0) \ge 0 \\ &\Leftrightarrow& \beta_0 + \beta_1 x_{01} + \cdots + \beta_p x_{0p} \ge 0 \end{aligned}$$
 
 In practice, we replace parameters $\beta_0, \ldots, \beta_p$ by their maximum likelihood estimates, $\hat{\beta}_0, \ldots, \hat{\beta}_p$.
 
@@ -354,8 +374,7 @@ If the value of the linear predictor is greater than zero, predict $y=1$, if not
 summary(swiss.glm.1)
 ```
 
--   For this model, linear predictor is
-    $\theta(\mathsf{margin}) = \beta_0 + \beta_1 \mathsf{margin}$.
+-   For this model, linear predictor is $\beta_0 + \beta_1 \mathsf{margin}$.
 
 -   MLEs are    
 $\hat \beta_0 = `r beta0`$ and     
@@ -463,7 +482,7 @@ swiss.glm.2 |> broom::augment() |>
 Assume we classify to class coded by $y=1$ if and only if
     $\mathsf{P}(y=1 | \mathbf{x}_0) \ge \tfrac12$.
 
-Recall that this is equivalent to $\theta(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) \ge 0$.
+Recall that this is equivalent to $g(\mathbf{x}_0) = \mathsf{logit}(p(\mathbf{x}_0)) \ge 0$.
 
 One can use `predict()` or `broom::augment()` to get estimated posterior probabilities.
 
@@ -505,10 +524,10 @@ swiss.glm.2 |>
 ```{r, ref.label='swisspred', echo=FALSE, message=FALSE}
 ```
 
--   For test case 0, $\hat \theta(\mathbf{x}_0) = -18.77$.
+-   For test case 0, $\hat{g(\mathbf{x}_0)} = -18.77$.
 
 -   Hence,
-    $\mathsf{P}(y=1 | \mathbf{x}_0) = 1/(1+e^{-\hat \theta(\mathbf{x}_0)}) = 1/(1+e^{18.77}) \approx 0$.
+    $\mathsf{P}(y=1 | \mathbf{x}_0) = 1/(1+e^{-\hat g(\mathbf{x}_0)}) = 1/(1+e^{18.77}) \approx 0$.
     
 ]
 
@@ -551,8 +570,9 @@ way around.
 
 The `tidymodels` framework is convenient: there's no worry about the order of the factor, and the code structure works the same for LDA, KDA etc.
 
-```{r eval=TRUE}
+```{r eval=TRUE, message=FALSE}
 library(parsnip); library(yardstick)
+
 swiss.glm.pred <- logistic_reg() |> fit(type~.,data=swiss.train) |> augment(new_data=swiss.test)
 
 swiss.glm.pred |> slice_head(n=3)
@@ -620,12 +640,8 @@ covid.train |>
   mutate(p=n/sum(n)) |>
   filter(value != "No") |>
   ggplot() +
-  geom_col(
-    mapping=aes(
-      y=name,
-      x=p
-      )
-    ) +
+  aes(y=name,x=p) +
+  geom_col() +
   facet_wrap(vars(Status)) +
   labs(x=NULL, y=NULL) +
   scale_x_continuous(
@@ -851,12 +867,12 @@ class: middle, inverse
 
 In logistic regression, probability $\mathsf{P}(y = 1|\mathbf{x})$ related to the
     predictors via the linear predictor,
-    $\theta(\mathbf{x}) = \beta_0 + \beta_1 x_{1} + \cdots + \beta_p x_{p}$.
+    $g(\mathbf{x}) = \beta_0 + \beta_1 x_{1} + \cdots + \beta_p x_{p}$.
 
 One can extend the model to $C$ classes by defining $C-1$ linear predictors,
-    $\theta_1(\mathbf{x}), \ldots, \theta_{C-1}(\mathbf{x})$.
+    $g_1(\mathbf{x}), \ldots, g_{C-1}(\mathbf{x})$.
 
-The probability of class $j$, $p_j(\mathbf{x}) = \mathsf{P}(j | \mathbf{x})$, is an increasing function of $\theta_j(\mathbf{x})$.
+The probability of class $j$, $p_j(\mathbf{x}) = \mathsf{P}(j | \mathbf{x})$, is an increasing function of $g_j(\mathbf{x})$.
 
 The probabilities appropriately scaled to all be within interval
 $[0,1]$, and that $\sum_{j=1}^{C-1} p_{j}(\mathbf{x}) \le 1$.
