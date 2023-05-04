@@ -9,11 +9,49 @@ $presentation-font-size-root:	35px;
   background-color: black !important;
 }
 
+/* Increase font size for table captions */
+table caption {
+  font-size: 1.6em;
+  color: #004B8D;
+}
+
+/* Decrease font size for in-table text */
+table td, table th {
+  font-size: 0.8em;
+}
+
+// Set color and center-justify figure captions
+figure figcaption {
+  text-align: center;
+  color: #004B8D;
+}
+
+
 /* style.scss */
+
 .plot-bottom-left {
   position: absolute;
   bottom: 0;
   left: 0;
+}
+
+.plot-top-left {
+  position: absolute;
+  bottom: 0.5;
+  height: "100";
+  left: 0;
+}
+
+.plot-top-right {
+  position: absolute;
+  bottom: 0.5;
+  right: 0;
+}
+
+.plot-bottom-right {
+  position: absolute;
+  bottom: 0;
+  right: 0;
 }
 
 

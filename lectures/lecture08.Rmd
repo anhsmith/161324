@@ -315,8 +315,7 @@ step(swiss.glm.2)
 
 -   Would the model be better with just one of those variables?
 
--   According to AIC criterion, model with both variables has lowest AIC
-    (13.260).
+-   The model with both variables has lowest (= 'best') AIC score (13.260).
 
 -   Dropping either `margin` or `diagonal` results in higher AIC scores, so best to keep both predictors.
 ]

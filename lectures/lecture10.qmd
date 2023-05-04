@@ -30,7 +30,12 @@ library(recipes)
 library(rsample)
 library(tune)
 library(factoextra)
+library(rstatix)
 theme_set(theme_bw())
+colm <- c("#004B8D", "#E4A024", "#9A3324", "#5E6738", "#D45D00", "#83786F",
+          "#A8AD00", "#C5B783", "#4F758B", "#98A4AE", "#0090E9")
+
+
 ```
 
 
@@ -126,7 +131,7 @@ Repeat this a number of times to ensure a good result.
 #| fig-width: 6
 
 set.seed(2)
-km.ani <- kmeans.ani(col = c("#004B8D", "#E4A024", "#9A3324"), pch=16)
+km.ani <- kmeans.ani(col = colm[1:3], pch=16)
 ```
 
 :::
@@ -662,6 +667,8 @@ It is generally sensible to *normalise* variables (subtract the mean and divide 
 #| echo: false
 #| fig-width: 7
 #| fig-height: 6
+#| cache: true
+
 library(GGally) 
 food |> select(-Country) |> ggpairs(diag = list(continuous="barDiag"), gaps=0)
 ```
@@ -716,6 +723,8 @@ fviz_cluster(km_all_k2, data=food_norm, repel=T, ggtheme=theme_bw())
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
+#| cache: true
+
 library(GGally) 
 food |> 
   add_column(Cluster = factor(km_all_k2$cluster)) |> 
@@ -970,16 +979,14 @@ Hierarchical cluster analysis uses a different approach to $k$-means.
 - Is deterministic rather than stochastic (no random starts)
 - Produces a 'dendrogram' to show the hierarchical structure
 - Does not require prior choice of $k$; can 'cut' the dendrogram at any level
-- Let's look at how it works with a subset of 6 countries
+- Let's look at how it works with a subset of 6 countries and 2 variables
 
 ```{r}
 # Select 6 countries
-fn6 <- food_norm |> 
-  filter(
-    rownames(food_norm) %in% 
-      c("Yugoslavia","Romania","Bulgaria",
-        "Albania","Italy","Greece")
-    )
+food6 <- food[
+  c("Yugoslavia","Romania","Greece","Albania","Italy","Bulgaria"),
+  c("RedMeat", "WhiteMeat")
+]
 ```
 
 :::
@@ -1015,55 +1022,489 @@ fc |> fviz_dend(
 Hierarchical cluster analysis
 :::
 
-## Hierarchical cluster analysis 
+---
 
 
 ```{r}
 #| echo: false
-#| tbl-cap: "Data matrix"
- 
-fn6 |> round(2) |> select(RedMeat:Cereals) |> kable() |> kable_styling(font_size = 12)
+#| message: false
+dist_type <- "euclidean"
+source("hierarchical_demo_lecture10.R")
 ```
 
+:::: {.columns}
+
+::: {.column}
+### Agglomerative hierarchical clustering {.smaller}
+::: {style="font-size: 70%;"}
+1. Start with each object in its own cluster
+2. Repeat until all objects are in one cluster:
+    a. Calculate the distance between each <br>pair of objects in the $\mathbf{x}$ space
+    b. Join the closest pair of objects
+:::
 ```{r}
 #| echo: false
-#| tbl-cap: "Distance matrix"
+#| fig-height: 3.5
+#| fig-width: 3.5
+#| fig-align: center
 
-library(modelsummary)
-
-dist_fun <- function(x) {
-  out <- dist(x, diag = T, upper = T) |> 
-    as.matrix() |> as.data.frame() 
-  datasummary_correlation_format(
-    out,
-    fmt = 2,
-    upper_triangle = ".",
-    diagonal = ".")
-}
-
-fn6 |> datasummary_correlation(method=dist_fun) |>  kable_styling(font_size = 12)
-
+food6_distmat |> 
+  as.dist() |> 
+  hclust(method = "average") |>
+  fviz_dend(horiz=T, show_labels = F, ylab = "", main="") +
+  theme(axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank()) +
+  annotate(geom = "segment", 
+           x=6.7, xend=6.7,
+           y=0, yend=5,
+           arrow = arrow(length = unit(0.05, "npc")),
+           lwd=2 ) +
+  geom_label(aes(x=1:6, y=-.2, label=1:6) ) +
+  geom_label(aes(x=c(1.5,3.5,5.5),y=c(1.6,1.5,2.2),
+                 label=c("1,2","3,4","5,6"))) +
+  geom_label(aes(x=c(4.5,3), y=c(3.2,4.9),
+                 label=c("1,2,3,4","1,2,3,4,5,6")),
+            ) +
+  coord_flip(clip = 'off') +
+  theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 30, unit = "pt"))
 ```
 
+:::
+
+::: {.column}
+### Divisive <br>hierarchical clustering 
+
+::: {style="font-size: 70%;"}
+1. Start with all objects in one cluster
+2. Split into the 'best' 2 groups based on some criterion
+3. Continue to split until each object is in its own cluster
+:::
 ```{r}
 #| echo: false
-#| fig-width: 4
-#| fig-height: 4
-#| fig-cap: "Principal Component Analysis"
+#| fig-height: 3.5
+#| fig-width: 3.5
+#| fig-align: center
 
-library("FactoMineR")
-pca_fn6 <- fn6 |> PCA(graph = FALSE)
-fviz_pca_ind(pca_fn6, repel = TRUE) +
-  ggtitle("")
+food6_distmat |> 
+  `dimnames<-`(list(1:nrow(food6_distmat),1:ncol(food6_distmat))) |> 
+  as.dist() |> 
+  cluster::diana() |>
+  fviz_dend(horiz=T, show_labels = T, ylab = "", main="") +
+  theme(axis.text.x=element_blank(),
+      axis.ticks.x=element_blank()) +
+  annotate(geom = "segment", 
+           x=6.7, xend=6.7,
+           y=6.7, yend=0,
+           arrow = arrow(length = unit(0.05, "npc")),
+           lwd=2) +
+  geom_label(aes(x=1:6, y=-.2, label=1:6) ) +
+  geom_label(aes(x=c(1.5,3.5,5.5),y=c(2.22,1.5,1.6),
+                 label=c("1,2","3,4","5,6"))) +
+  geom_label(aes(x=c(2.5,4), y=c(4.6,6.7),
+                 label=c("1,2,3,4","1,2,3,4,5,6"))) +
+  coord_flip(clip = 'off') +
+  theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 30, unit = "pt"))
+  
 ```
+:::
+
+::::
+
 
 ::: footer
 Hierarchical cluster analysis
 :::
 
-## Distance matrix
 
-![](/graphics/cluster_flow.png)
+## Euclidean distance matrix
+
+:::: {.fragment fragment-index=1}
+::: {.absolute bottom=520 height="100" left=90}
+```{r}
+#| echo: false
+#| tbl-cap: "Data matrix"
+
+food6 |> kable() |> 
+  kable_styling(font_size = 18)
+```
+:::
+::::
+
+::::: {.fragment fragment-index=2}
+:::: {.fragment .fade-out fragment-index=3}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat0
+```
+:::
+::::
+:::::
+
+
+:::: {.fragment fragment-index=3}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat_all
+```
+:::
+::::
+
+
+:::: {.fragment fragment-index=4}
+::: {.absolute bottom=150 right=50}
+::: {style="font-size: 55%; color: #83786F"}
+$$
+\begin{align}
+\delta_{s,t} &= \sqrt{\sum_{j=1}^p (x_{sj} - x_{tj})^2} \\ \\
+\delta_{\text{Yug,Rom}} &= \sqrt{(4.4-6.2)^2 + (5.0-6.3)^2} \\
+&=2.22
+\end{align}
+$$
+:::
+:::
+::::
+
+
+:::: {.fragment fragment-index=4}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat0 |> kable() |> kable_styling(font_size = 18)
+
+```
+:::
+::::
+
+
+
+
+## Hierarchical cluster analysis
+
+<!-- BEGINNING -->
+
+::: {.absolute bottom=520 height="100" left=90}
+```{r}
+#| echo: false
+#| tbl-cap: "Data matrix"
+
+food6 |> kable() |> 
+  kable_styling(font_size = 18)
+```
+:::
+
+:::: {.fragment .fade-out fragment-index=11}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat0 |> kable() |> kable_styling(font_size = 18)
+
+```
+:::
+::::
+
+:::: {.fragment .fade-out fragment-index=12}
+::: {.plot-bottom-right}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Dendrogram"
+ 
+dend0 
+```
+:::
+::::
+
+:::: {.fragment .fade-out fragment-index=13}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat0
+```
+:::
+::::
+
+
+
+<!-- STEP 1_bi Join Bul and Ita -->
+
+::::: {.fragment fragment-index=11}
+:::: {.fragment .fade-out fragment-index=14}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+
+distmat_H |> kable(escape=F) |> kable_styling(font_size = 18)
+
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=12}
+:::: {.fragment .fade-out fragment-index=22}
+::: {.plot-bottom-right}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Dendrogram"
+dend_bi 
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=13}
+:::: {.fragment .fade-out fragment-index=23}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat_bi
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=14}
+:::: {.fragment .fade-out fragment-index=21}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_bi |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+<!-- STEP 2_bi_ga Join Gre+Alb  -->
+
+::::: {.fragment fragment-index=21}
+:::: {.fragment .fade-out fragment-index=24}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_bi_H |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=22}
+:::: {.fragment .fade-out fragment-index=32}
+::: {.plot-bottom-right}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Dendrogram"
+dend_bi_ga
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=23}
+:::: {.fragment .fade-out fragment-index=33}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat_bi_ga
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=24}
+:::: {.fragment .fade-out fragment-index=31}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_bi_ga |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+<!-- STEP 3_bi_ga_ya Join Rom+Yug  -->
+
+::::: {.fragment fragment-index=31}
+:::: {.fragment .fade-out fragment-index=34}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_bi_ga_H |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=32}
+:::: {.fragment .fade-out fragment-index=42}
+::: {.plot-bottom-right}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Dendrogram"
+dend_bi_ga_yr
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=33}
+:::: {.fragment .fade-out fragment-index=43}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat_bi_ga_yr
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=34}
+:::: {.fragment .fade-out fragment-index=41}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_bi_ga_yr |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+
+<!-- STEP 4 _biyr_ga -->
+
+::::: {.fragment fragment-index=41}
+:::: {.fragment .fade-out fragment-index=45}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_bi_ga_yr_H |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=42}
+:::: {.fragment .fade-out fragment-index=52}
+::: {.plot-bottom-right}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Dendrogram"
+dend_biyr_ga
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=43}
+:::: {.fragment .fade-out fragment-index=53}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat_biyr_ga
+```
+:::
+::::
+:::::
+
+::::: {.fragment fragment-index=45}
+:::: {.fragment .fade-out fragment-index=51}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_biyr_ga |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+
+
+<!-- FINAL STEP 5_biyrga -->
+
+::::: {.fragment fragment-index=51}
+::: {.plot-top-right}
+```{r}
+#| echo: false
+#| tbl-cap: "Distance matrix"
+distmat_biyr_ga_H |> kable(escape=F) |> kable_styling(font_size = 18)
+```
+:::
+:::::
+
+::::: {.fragment fragment-index=52}
+::: {.plot-bottom-right}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Dendrogram"
+dend_biyrga
+```
+:::
+:::::
+
+::::: {.fragment fragment-index=53}
+::: {.plot-bottom-left}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "Scatterplot"
+scat_biyrga
+```
+:::
+:::::
+
+
+
+
+
+::: footer
+Hierarchical cluster analysis
+:::
 
 ## Hierarchical cluster analysis {.scrollable}
 
