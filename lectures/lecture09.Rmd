@@ -24,6 +24,7 @@ editor_options:
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(patchwork)
+library(parsnip)
 library(skimr)
 library(rsample)
 library(recipes)
@@ -55,30 +56,78 @@ covid.train <- training(split)
 covid.test  <- testing(split)
 ```
 
-## K-Nearest neighbour classification
+## K-nearest neighbour classification
 
-This method finds the $k$ data points in the training set that are most similar ('near') to the data points in the test set.
+- Partitions the predictor space ( $\mathbf{x}$ ) according to the class ( $y$ ) of the $k$ nearest data points.      
+- To classify, a test case is assigned to the majority class in the $k$ nearest training data points.
 
-To classify, each test case is assigned to the most common class in the $k$ nearest training data points.
-
-This is similar to using k-nearest neighbour for imputing missing values.
+```{r, echo=F, warning=F, fig.dim=c(6,4), out.width="60%" }
+library(ggforce)
+ggplot(swiss.train, aes(margin, diagonal,group = -1L)) +
+  geom_voronoi_tile(aes(fill = type), alpha=0) +
+  geom_voronoi_segment(alpha=0) +
+  geom_point(aes(col=type)) +
+  ggtitle("1-nearest neighbour model for Swiss banknotes")
+```
 
 ---
 
-## K-Nearest neighbour classification
+## K-nearest neighbour classification
+
+- Partitions the predictor space ( $\mathbf{x}$ ) according to the class ( $y$ ) of the $k$ nearest data points.      
+- To classify, a test case is assigned to the majority class in the $k$ nearest training data points.
+
+```{r, echo=F, warning=F, fig.dim=c(6,4), out.width="60%" }
+ggplot(swiss.train, aes(margin, diagonal,group = -1L)) +
+  geom_voronoi_tile(aes(fill = type), alpha=0) +
+  geom_voronoi_segment() +
+  geom_point(aes(col=type)) +
+  ggtitle("1-nearest neighbour model for Swiss banknotes")
+```
+
+
+---
+
+## K-nearest neighbour classification
+
+- Partitions the predictor space ( $\mathbf{x}$ ) according to the class ( $y$ ) of the $k$ nearest data points.      
+- To classify, a test case is assigned to the majority class in the $k$ nearest training data points.
+
+```{r, echo=F, warning=F, fig.dim=c(6,4), out.width="60%" }
+ggplot(swiss.train, aes(margin, diagonal,group = -1L)) +
+  geom_voronoi_tile(aes(fill = type), alpha=0.25) +
+  geom_voronoi_segment(alpha=.25) +
+  geom_point(aes(col=type)) +
+  ggtitle("1-nearest neighbour model for Swiss banknotes")
+```
+
+---
+
+## K-nearest neighbour classification
 
 There are two main things to consider:
 
--   Calculating 'nearness'. Euclidean distance is often used between observations to
-    determine the $k$ most similar items.
+1. **Calculating 'nearness'**. Euclidean distance is often used between observations to determine the $k$ most similar items.
 
--   Choosing $k$
+2. **Choosing $k$**
 
-    - Small $k$ will give greater variation, as fewer observations in the
-    training data are used for each point. But, those observations will
-    be relative close to the test data, so will likely have lower bias.
+- Small $k$
+      - Few observations in the training data are used for each point, so the model is very specifically adapted to the points that happen to be in the training data, causing *low bias and high variance*. 
+      - Say we fit the model 1,000 times to 1,000 different samples. The models will 'get it right' on average (low bias) but they'll vary a lot from sample to sample (high variance)!
 
-    - Larger $k$ will give less variation because classification is based on the majority vote of a large number of observations from the training data. However, larger $k$ will have more bias, as we will be comparing the test data to observations that have greater disparity in the pattern of predictors.
+- Larger $k$
+      - Any point in the predictor space is determined by a larger number of  observations, resulting in a 'smoother' prediction surface and *high bias and low variance*. 
+      - The model is less flexible so it will reliably capture the predominant patterns (low variance) but may miss some minor structures in the data (bias).
+
+---
+
+## K-nearest neighbour classification
+
+```{r, echo=FALSE, out.width="792px", out.height="400px"}
+knitr::include_graphics("graphics/knn_1_20.png")
+```
+
+Source: https://kevinzakka.github.io/2016/07/13/k-nearest-neighbor/
 
 ---
 
@@ -91,7 +140,7 @@ There are two ways a tie can occur in $k$-nearest neighbour classification.
 -   Ties between the distances (i.e. more than $k$ observations in the
     training set have the same distance as the nearest $k$ points from
     the test observation). In this case we normally use all observations
-    within the same distance as the first $k$. An alternate would be to
+    within the same distance as the first $k$. An alternative would be to
     pick the $k$ neighbours at random.
 
 -   A tie in the majority vote of the $k$ nearest observations for
@@ -162,11 +211,31 @@ class: middle, inverse
 
 ## Classification Trees
 
+
+.left-code[
+
 -   Similar to regression trees, except that the target variable is categorical.
 
--   Instead of the mean prediction at each node, we use the 'majority vote' of class at each node.
+-   Instead of predicting the mean of continuous $y$ in the training data at each terminal node, predict whatever is the 'majority vote' of class $y$.
 
--   Instead of minimising RSS to find the next optimal split, we instead minimise a measure of node impurity.
+-   Instead of minimising RSS to find the next optimal split, we instead minimise some measure of 'node impurity'.
+]
+
+.right-plot[
+
+```{r, echo=FALSE, message=FALSE}
+swiss.rp2 <- decision_tree(
+  mode='classification',
+  min_n=7
+  ) |>
+  fit(type ~ ., data=swiss.train)
+
+swiss.rp2 |> extract_fit_engine() |> plot(margin=0.1)
+swiss.rp2 |> extract_fit_engine() |> text(cex=.7)
+
+```
+]
+
 
 ---
 
@@ -345,7 +414,7 @@ ggplot(swiss.all) +
 
 ## Random forests for classification
 
-- Random forests are just collections ('ensembles') of tree many tree models.
+- Random forests are just collections ('ensembles') of many tree models.
 
 - Classification is done by passing each test observation through each tree.
 
@@ -395,13 +464,13 @@ A linear combination of nodes at the previous layer feed through an activation f
 The default activation function is the sigmoid, also used for logistic/multinomial regression.
     $$\phi(\theta) = \frac{1}{1+e^{-\theta}}$$
 
-This gives the 'firing' style behaviour as $\theta$ moves through zero.
+This gives the 'firing' style behaviour. As $\theta$ moves from negative, passes zero, and becomes positive, $\phi(\theta)$ goes from zero to one.
 
 ---
 
 ## Neural networks for classification
 
-We need to define:
+We need to decide:
 
 -   The number of hidden layers.
 
@@ -429,17 +498,16 @@ The outcome nodes for classification are the probability of a class,
     so are also defined using the sigmoid function
     $$\hat{p_c} = \phi(\beta_{0c} + \beta_{1c}z_1 + \cdots + \beta_{kc}z_k).$$
 
-The $\alpha$ and $\beta$ terms (the *weights*) are then estimated from
+The $\alpha$ and $\beta$ terms (the 'weights') are then estimated from
     training data.
 
 ---
 
 ## Neural networks for classification
 
-The actual network used for classification and the method of fitting the weights $\alpha$ and
-$\beta$ terms differs based on the number of classes.
+The actual network used for classification and the method of fitting the weights $\alpha$ and $\beta$ terms differs based on the number of classes.
 
-With 2 classes, a single output node $\hat{p}$ is used, and the cross entropy information criterion is minimised $$I_E = \hat{p} \log(\hat{p})$$.
+With 2 classes, a single output node $\hat{p}$ is used, and the cross entropy information criterion is minimised $$I_E = \hat{p} \log(\hat{p})$$
 
 With 3 or more classes, an output node per class is used, and maximum likelihood is used to estimate the weights.
 
@@ -447,7 +515,7 @@ With 3 or more classes, an output node per class is used, and maximum likelihood
 
 ## Fitting neural networks for classification in R
 
-We'll utilise the `mlp()` specification from the `tidymodels` framework:
+We'll utilise the `mlp()` ('MultiLayer Perceptron') function from the `tidymodels` framework:
 
 ```{r, eval=FALSE}
 mlp(mode='classification', hidden_units=2, penalty=0.1, epochs=1000)
@@ -647,7 +715,7 @@ all |>
   theme(legend.position='top')
 ```
 
-Logistic regression looks best.
+The curve for logistic regression is highest, so this model looks best according to ROC.
 
 ]
 
@@ -660,10 +728,13 @@ Logistic regression looks best.
 
 ## Dealing with class imbalance
 
-None of the models is any good at predicting confirmed cases of COVID-19.
+All these models have better sensitivity than specificity;     
+they're better at predicting non-cases than confirmed cases of COVID-19.
 
-We could use a different prediction threshold (like we did with the logistic) to move along
-the ROC curve. But the ROC curve as it is shows logistic regression best.
+This isn't great, because we want to err on the side of caution;       
+we'd be happy to predict more non-cases as confirmed cases in order to get a better success rate for the confirmed cases.
+
+By default, we use a prediction threshold of 0.5, but we could change this (like we did in the lecture on logistic regression). We can think of this as moving to a different part of the ROC curve.
 
 Another way to deal with class imbalance is to re-balance the classes prior to
 training.
@@ -687,36 +758,37 @@ The undersampled class is often the interesting one!
 
 See here for more: https://jair.org/index.php/jair/article/view/10302/24590
 
-Use with caution SMOTE and any other method that involves making up syntheic data! 
+Use with caution SMOTE and any other method that involves synthetic data. We're essentially making them up!
 
 ---
 
 ## Implementing SMOTE in R
 
 .left-code-wide[
-We use `step_smotenc()` from the `themis` package which handles categorical predictors.
 
 ```{r, message=FALSE}
 library(themis); set.seed(1234)
 rec <- recipe(Status ~ ., data=covid.train) |>
   step_smotenc(Status, over_ratio=1, skip=TRUE) |>
   prep(covid.train)
-
 covid.balanced <- rec |> bake(new_data=NULL)
 covid.balanced |> count(Status)
-
 covid.train |> count(Status)
 ```
 ]
 
 .right-plot-narrow[
+
+- The `step_smotenc()` from the `themis` package handles categorical predictors.
+
 - The `over_ratio` parameter specifies the majority to minority class ratio.
 
 - We use `skip=TRUE` so that this step applies only to the data we `prep()` with (training data).
 
 - If we apply `bake()` with new data, the step will be skipped.
 
-    - `new_data=NULL` ensures we get the prep'd training data back.
+- `new_data=NULL` ensures we get the prep'd training data back.
+
 ]
 ---
 
@@ -794,9 +866,9 @@ Some classification methods have strong assumptions.
 
 ## Classification summary
 
-Methods with strong assumptions will do well when the assumptions hold, and can do very poorly if the assumptions do not hold.
+Methods with strong assumptions generally do well when the assumptions hold, and do poorly when the assumptions do not hold.
 
-In practice we don't know for certain whether the assumptions hold, so many data miners prefer to use more flexible tools such as trees, forests or neural networks.
+In practice, we don't know for certain whether the assumptions hold, so many data miners prefer to use more flexible tools such as trees, forests or neural networks.
 
 If classes are imbalanced, then your 'baseline' level for predictive accuracy is "assign everything to the biggest group".
 

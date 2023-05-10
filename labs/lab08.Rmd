@@ -42,7 +42,7 @@ horse.train <- training(split)
 horse.test  <- testing(split)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Use `logistic_reg()` with the `glm` engine to build a logistic model for `Died` based on all the other physiological parameters.
 
@@ -67,7 +67,7 @@ wine.test  <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/wine-test.csv") 
   mutate(Cultivar = factor(Cultivar))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Use `multinom_reg()` to fit a multinomial regression model on all the data. Remember that the number of iterations (epochs) is important to ensuring it converges.
 

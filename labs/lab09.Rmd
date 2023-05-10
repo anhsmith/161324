@@ -9,8 +9,7 @@ In this workshop we'll be looking at some more classifiers, all of which you hav
 - trees and forests
 - neural networks
 
-As always, we'll use the `tidymodels` framework for fitting, estimating classes and for
-model accuracy.
+As always, we'll use the `tidymodels` framework for fitting, estimating classes and for model accuracy.
 
 ## Return to the Crime Scene
 
@@ -30,7 +29,7 @@ glass.train <- training(split)
 glass.test  <- testing(split)
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Fit the following model types to the `glass.train` data:
 
@@ -49,7 +48,7 @@ glass.test  <- testing(split)
 
 The Avila data set has been extracted from 800 images of the the "Avila Bible", a giant Latin copy of the whole Bible produced during the XII century between Italy and Spain.  
 
-The palaeographic analysis of the  manuscript has  individuated the presence of 12 copyists, or scribes.
+The palaeographic analysis of the  manuscript has individuated the presence of 12 copyists, or scribes.
 
 There are 10 numeric predictors, each of them normalised to mean 0 and standard deviation 1. The following predictors are available:
 
@@ -76,7 +75,7 @@ avila.train <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/avila-train.csv
 avila.test <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/avila-test.csv") |> mutate(scribe = factor(scribe))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Start by exploring the data. e.g. you might want to assess the relationship between each variable and the target `scribe`.
 

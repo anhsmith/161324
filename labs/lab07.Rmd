@@ -122,7 +122,7 @@ pred1 |> group_by(model) |> accuracy(truth=group, estimate=.pred_class)
 
 1. Fit naive Bayes and KDA models to the `syn2.train` and `syn3.train` datasets.
 2. Perform predictions for each model on the respective test datasets.
-3. Compute the accuracies of each model on each dataset.
+3. Compute the accuracy of each model on each dataset.
 4. You should find a different winner for each dataset. The winner in each case should make sense when you consider the assumptions of the models and your exploratory analysis of each dataset!
 
 
@@ -160,7 +160,7 @@ glass.train |> pivot_longer(where(is.numeric)) |>
   facet_wrap(vars(name), scales='free')
 ```
 
-A few of these look decidely non-normal! We could also assess the balance in the data by just tabling up the number of each window type:
+A few of these look decidedly non-normal! We could also assess the balance in the data by just tabling up the number of each window type:
 
 ```{r}
 glass.test |> count(Type)

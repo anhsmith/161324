@@ -3,6 +3,8 @@ title: "Cluster Analysis"
 subtitle: "161324 Data Mining | Lecture 10"
 format: 
   revealjs:
+    width: 1050
+    height:	700
     transition: fade
     theme: [default, myquarto.scss]
     slide-number: c/t  
@@ -44,17 +46,17 @@ colm <- c("#004B8D", "#E4A024", "#9A3324", "#5E6738", "#D45D00", "#83786F",
 . . .
 
 
-In the past couple of weeks, we've been looking at classification models, which aim to predict the value of an *existing* categorical variable $Y$ based on a set of variables $\mathbf{X}$. This is called **supervised** classification.
+Recently, we've learned about classification models, which aim to predict the value of an *existing* categorical variable $y$ based on a set of variables $\mathbf{x}$. This is called *supervised* classification.
 
 . . .
 
 
-Cluster analysis is a broad range of methods for creating a *new* categorical variable based on a set of variables $\mathbf{X}$. This is called **unsupervised** classification.
+Cluster analysis is used to create a *new* categorical variable based on a set of feature variables $\mathbf{x}$. This is called *unsupervised* classification.
 
 . . .
 
 
-The goal is to classify our cases into groups that have *high within-group similarity* and *low between-group similarity*, with respect to $\mathbf{X}$.
+The goal is to classify our objects into groups that have *high within-group similarity* and *low between-group similarity*, with respect to $\mathbf{X}$.
 
 ::: footer
 Lecture 10 | Cluster Analysis
@@ -76,7 +78,7 @@ Often its something in between.
 :::
 
 ::: {.column width="20%"}
-![](../graphics/three_scenarios.png){.absolute right=100 width="200"}
+![](graphics/three_scenarios.png)
 :::
 
 ::::
@@ -86,10 +88,8 @@ Often its something in between.
 . . .
 
 
-::: {.callout-important}
-Regardless of the situation, cluster analysis will *always* produce groups!
-:::
-
+<br>
+*Regardless of the situation, cluster analysis will always produce groups!*
 
 
 # The $k$-means clustering algorithm {.background-black}
@@ -117,7 +117,7 @@ $k$-means cluster analysis
 
 <br>
 
-Repeat this a number of times to ensure a good result.
+It is wise to repeat the whole algorithm many times with different random starts to ensure a good result.
     
 
 :::
@@ -687,15 +687,13 @@ $k$-means cluster analysis
 #| output-location: column
 #| fig-width: 5
 #| fig-height: 4
-food <- food |> 
-  column_to_rownames(var="Country")
 
 food_norm <- food |> 
   recipe(~ .) |>
   step_normalize(all_numeric()) |> 
   prep() |> 
   bake(food) |> 
-  mutate(Country = rownames(food)) |> 
+  mutate(Country = food$Country) |> 
   column_to_rownames(var="Country")
 
 food_norm |> 
@@ -709,7 +707,7 @@ $k$-means cluster analysis
 :::
 
 
-## Visualising cluster analysis for nine variables
+## Cluster analysis for nine variables
 
 The `fviz_cluster()` function will now show the clusters on a Principal Components Analysis plot of the nine variables. 
 
@@ -718,8 +716,6 @@ km_all_k2 <- kmeans(food_norm, centers=2, nstart=50)
 fviz_cluster(km_all_k2, data=food_norm, repel=T, ggtheme=theme_bw())
 ```
 
-## 
-
 ```{r}
 #| fig-width: 8
 #| fig-height: 7
@@ -727,6 +723,7 @@ fviz_cluster(km_all_k2, data=food_norm, repel=T, ggtheme=theme_bw())
 
 library(GGally) 
 food |> 
+  select(-Country) |> 
   add_column(Cluster = factor(km_all_k2$cluster)) |> 
   ggpairs(mapping=aes(colour = Cluster))
 ```
@@ -751,7 +748,7 @@ $k$-means cluster analysis
 
 - The silhouette index can be used to choose $k$.
 
-- If one uses actual data points as the cluster centres ('medoids') instead of centroids, giving '$k$-medoid' cluster analysis. This may be implemented with `pam()` in R.
+- One can use actual data points as the cluster centres ('medoids') instead of centroids, giving '$k$-medoid' cluster analysis. This can be implemented with `pam()` in R.
 
 :::
 
@@ -775,8 +772,8 @@ Hierarchical cluster analysis
 Hierarchical cluster analysis uses a different approach to $k$-means.
 
 :::{.incremental}
-- Is deterministic rather than stochastic (no random starts)
-- Produces a 'dendrogram' to show the hierarchical structure
+- Is deterministic rather than stochastic<br>(no random starts, same every time)
+- Hierarchical structure can be shown with a 'dendrogram'
 :::
 
 :::
@@ -816,8 +813,8 @@ Hierarchical cluster analysis
 
 Hierarchical cluster analysis uses a different approach to $k$-means.
 
-- Is deterministic rather than stochastic (no random starts)
-- Produces a 'dendrogram' to show the hierarchical structure
+- Is deterministic rather than stochastic<br>(no random starts, same every time)
+- Hierarchical structure can be shown with a 'dendrogram'
 - Does not require prior choice of $k$; can 'cut' the dendrogram at any level
 
 
@@ -976,17 +973,24 @@ Hierarchical cluster analysis
 
 Hierarchical cluster analysis uses a different approach to $k$-means.
 
-- Is deterministic rather than stochastic (no random starts)
-- Produces a 'dendrogram' to show the hierarchical structure
+- Is deterministic rather than stochastic<br>(no random starts, same every time)
+- Hierarchical structure can be shown with a 'dendrogram'
 - Does not require prior choice of $k$; can 'cut' the dendrogram at any level
 - Let's look at how it works with a subset of 6 countries and 2 variables
 
 ```{r}
-# Select 6 countries
-food6 <- food[
-  c("Yugoslavia","Romania","Greece","Albania","Italy","Bulgaria"),
-  c("RedMeat", "WhiteMeat")
-]
+# Select 2 vars and 6 countries (in this order)
+six_countries <- c("Yugoslavia","Romania","Greece",
+                   "Albania","Italy","Bulgaria")
+
+food6 <- food |> 
+  select(Country, RedMeat, WhiteMeat) |> 
+  slice(Country |> 
+          factor(levels = six_countries) |> 
+          order(na.last=NA)
+        ) |> 
+  column_to_rownames("Country")
+  
 ```
 
 :::
@@ -1065,7 +1069,7 @@ food6_distmat |>
   geom_label(aes(x=c(1.5,3.5,5.5),y=c(1.6,1.5,2.2),
                  label=c("1,2","3,4","5,6"))) +
   geom_label(aes(x=c(4.5,3), y=c(3.2,4.9),
-                 label=c("1,2,3,4","1,2,3,4,5,6")),
+                 label=c("3,4,5,6","1,2,3,4,5,6")),
             ) +
   coord_flip(clip = 'off') +
   theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 30, unit = "pt"))
@@ -1118,7 +1122,7 @@ Hierarchical cluster analysis
 :::
 
 
-## Euclidean distance matrix
+## Euclidean 'straight line' distances
 
 :::: {.fragment fragment-index=1}
 ::: {.absolute bottom=520 height="100" left=90}
@@ -1161,8 +1165,8 @@ scat_all
 
 
 :::: {.fragment fragment-index=4}
-::: {.absolute bottom=150 right=50}
-::: {style="font-size: 55%; color: #83786F"}
+::: {.absolute bottom=150 right=350}
+::: {style="font-size: 50%; color: #83786F"}
 $$
 \begin{align}
 \delta_{s,t} &= \sqrt{\sum_{j=1}^p (x_{sj} - x_{tj})^2} \\ \\
@@ -1176,7 +1180,7 @@ $$
 
 
 :::: {.fragment fragment-index=4}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1186,10 +1190,11 @@ distmat0 |> kable() |> kable_styling(font_size = 18)
 :::
 ::::
 
+::: footer
+Euclidean distance
+:::
 
-
-
-## Hierarchical cluster analysis
+## Hierarchical clustering, 'average' linkage
 
 <!-- BEGINNING -->
 
@@ -1204,7 +1209,7 @@ food6 |> kable() |>
 :::
 
 :::: {.fragment .fade-out fragment-index=11}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1215,7 +1220,7 @@ distmat0 |> kable() |> kable_styling(font_size = 18)
 ::::
 
 :::: {.fragment .fade-out fragment-index=12}
-::: {.plot-bottom-right}
+::: {.absolute bottom="0%" left="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 4
@@ -1239,13 +1244,11 @@ scat0
 :::
 ::::
 
-
-
 <!-- STEP 1_bi Join Bul and Ita -->
 
 ::::: {.fragment fragment-index=11}
 :::: {.fragment .fade-out fragment-index=14}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1259,7 +1262,7 @@ distmat_H |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=12}
 :::: {.fragment .fade-out fragment-index=22}
-::: {.plot-bottom-right}
+::: {.absolute bottom="0%" left="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 4
@@ -1287,7 +1290,7 @@ scat_bi
 
 ::::: {.fragment fragment-index=14}
 :::: {.fragment .fade-out fragment-index=21}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1301,7 +1304,7 @@ distmat_bi |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=21}
 :::: {.fragment .fade-out fragment-index=24}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1313,7 +1316,7 @@ distmat_bi_H |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=22}
 :::: {.fragment .fade-out fragment-index=32}
-::: {.plot-bottom-right}
+::: {.absolute bottom="0%" left="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 4
@@ -1341,7 +1344,7 @@ scat_bi_ga
 
 ::::: {.fragment fragment-index=24}
 :::: {.fragment .fade-out fragment-index=31}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1355,7 +1358,7 @@ distmat_bi_ga |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=31}
 :::: {.fragment .fade-out fragment-index=34}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1367,7 +1370,7 @@ distmat_bi_ga_H |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=32}
 :::: {.fragment .fade-out fragment-index=42}
-::: {.plot-bottom-right}
+::: {.absolute bottom="0%" left="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 4
@@ -1395,7 +1398,7 @@ scat_bi_ga_yr
 
 ::::: {.fragment fragment-index=34}
 :::: {.fragment .fade-out fragment-index=41}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1410,7 +1413,7 @@ distmat_bi_ga_yr |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=41}
 :::: {.fragment .fade-out fragment-index=45}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1422,7 +1425,7 @@ distmat_bi_ga_yr_H |> kable(escape=F) |> kable_styling(font_size = 18)
 
 ::::: {.fragment fragment-index=42}
 :::: {.fragment .fade-out fragment-index=52}
-::: {.plot-bottom-right}
+::: {.absolute bottom="0%" left="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 4
@@ -1450,7 +1453,7 @@ scat_biyr_ga
 
 ::::: {.fragment fragment-index=45}
 :::: {.fragment .fade-out fragment-index=51}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1460,12 +1463,10 @@ distmat_biyr_ga |> kable(escape=F) |> kable_styling(font_size = 18)
 ::::
 :::::
 
-
-
 <!-- FINAL STEP 5_biyrga -->
 
 ::::: {.fragment fragment-index=51}
-::: {.plot-top-right}
+::: {.absolute bottom="59%" left="60%"}
 ```{r}
 #| echo: false
 #| tbl-cap: "Distance matrix"
@@ -1475,7 +1476,7 @@ distmat_biyr_ga_H |> kable(escape=F) |> kable_styling(font_size = 18)
 :::::
 
 ::::: {.fragment fragment-index=52}
-::: {.plot-bottom-right}
+::: {.absolute bottom="0%" left="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 4
@@ -1499,52 +1500,308 @@ scat_biyrga
 :::::
 
 
+::: footer
+Hierarchical cluster analysis
+:::
 
+## Other group-joining 'linkage' criteria {.smaller}
 
+There are a number of 'linkage' criteria, ways to calculate the distance between groups of objects. 
+
+- 'Average' linkage is simple and generally very sensible (agglomerative, hierarchical cluster analysis with average linkage is sometimes called 'UPGMA'). 
+- 'Ward' linkage is another good but more complicated option.
+- 'Complete' and 'single' linkage are typically poor options.
+
+::: {.absolute left=100 top=300 width=600}
+
+![](graphics/Linkage_types.png)
+:::
 
 ::: footer
 Hierarchical cluster analysis
 :::
 
-## Hierarchical cluster analysis {.scrollable}
+
+## Hierarchical and $k$-means clustering {.smaller}
+
+With $k$-means, the clusters are defined by the distance to a centroid. This results in 'spherical' clusters.
+
+Hierarchical clustering joins the most similar points and groups of points from the 'ground up'. Clusters needn't be any particular shape. It's more about 'gaps'. 
 
 ```{r}
-dist(food_norm) |> as.matrix() |> round(2) |> 
-  kable() |> kable_styling(font_size = 12)
+#| echo: false
+set.seed(7)
+
+dg <- data.frame(
+  x1 = c(rnorm(50,-3,1), rnorm(50,3,1)),
+  x2 = runif(100,-7,7)
+  ) |> 
+  mutate(hclust = cbind(x1,x2) |> 
+           dist() |> 
+           hclust(method="average") |> 
+           cutree(2) |> 
+           factor(),
+         kmeans = cbind(x1,x2) |> 
+           dist() |> 
+           kmeans(2) |> 
+           pluck("cluster") |> 
+           factor()
+         )
 ```
 
 
-
-# Stray stuff {.background-black}
-
-## Observable
-
-```{ojs}
-
-food = FileAttachment("../data/food.csv").csv()
+::::{.absolute left="0%" width="50%"}
+:::{.fragment}
+```{r}
+#| echo: false
+#| fig-width: 3
+#| fig-height: 5
+ggplot(dg,aes(x=x1,y=x2)) + 
+  geom_point() + coord_fixed() +
+  theme(legend.position = "none") +
+  ggtitle("Two clusters?")
+```
+:::
+::::
+::::{.absolute left="33%" width="50%"}
+::: {.fragment}
+```{r}
+#| echo: false
+#| fig-width: 3
+#| fig-height: 5
+ggplot(dg,aes(x=x1,y=x2,col=hclust)) + 
+  geom_point() + coord_fixed() +
+  theme(legend.position = "none") +
+  ggtitle("Hierarchical average linkage")
+```
+:::
+::::
+::::{.absolute left="67%" width="50%"}
+::: {.fragment}
+```{r}
+#| echo: false
+#| fig-width: 3
+#| fig-height: 5
+ggplot(dg,aes(x=x1,y=x2,col=kmeans)) + 
+  geom_point() + coord_fixed() +
+  theme(legend.position = "none") +
+  ggtitle("k-means")
 
 ```
+:::
+::::
 
+::: footer
+Hierarchical vs k-means
+:::
 
-## Using gap analysis to choose $k$
+## Hierarchical clustering of all countries {.scrollable}
 
 ```{r}
+#| echo: false
+options(knitr.kable.NA = '.')
+```
 
-# fviz_gap_stat(gap_stat)
+```{r}
+dist(food_norm) |> dist(method = dist_type) |> as.matrix() |> as.data.frame() |> 
+  replace_upper_triangle(NA) |>  slice(-1) |> select(-last_col()) |>
+  column_to_rownames(var="rowname") |> kable(digits=1) |> kable_styling(font_size = 12)
 
 ```
 
 
 
+## Hierarchical clustering of all countries
 
-## Clustering binary data
+```{r}
+library(factoextra)
+fviz_nbclust(food_norm, hcut, method = "silhouette")
+```
+
+## Hierarchical clustering of all countries
+
+```{r}
+hcut2_food <- hcut(food_norm, k = 2) 
+fviz_dend(hcut2_food, rect = TRUE, k_colors = c("#004B8D","#E4A024"), main="Dendrogram")
+```
+
+## Hierarchical clustering of all countries
+
+```{r}
+fviz_cluster(hcut2_food, palette = c("#E4A024","#004B8D"), repel=T, main="Principal Components Plot")
+```
+
+## Summary: Hierarchical cluster analysis {.smaller}
+
+::: {.increment}
+
+- Builds a tree-like hierarchical system of groups and subgroups
+
+- Agglomerative hierarchical cluster analysis
+      - Begins with each object in its own group
+      - Joins the nearest objects step by step until all objects are in one group
+
+- Divisive hierarchical cluster analysis
+      - Begins with all objects in one group
+      - Splits each group into smaller ones until each object is in its own group
+
+- Can use any dissimilarity measure
+
+- Puts less emphasis on 'spherical' groups than $k$-means
+
+:::
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+
+# Clustering binary data {.background-black}
+
+::: footer
+Binary data
+:::
+
+## Clustering binary data {.scrollable}
+
+Let's look at a dataset of binary characteristics of animals.
 
 ```{r}
 animals <- cluster::animals |> 
-  rename("warm-blooded"=war, "can fly"=fly, "vertebrate"=ver, "endangered"=end, "live in groups"=gro, "have hair"=hai)
+  transmute("warm-blooded"=war-1, "can fly"=fly-1, "vertebrate"=ver-1,
+            "endangered"=end-1, "live in groups"=gro-1,"have hair"=hai-1) |>   
+  `rownames<-`(c("ant", "bee", "cat", "caterpillar", "chimpanzee", "cow", "duck", 
+                 "eagle", "elephant", "fly", "frog", "herring", "lion", "lizard", 
+                 "lobster", "human", "rabbit", "salmon", "spider", "whale"))
 
+# Replace some NAs and fix some errors -- humans are not endangered!
+animals[c('frog','lobster','salmon'),'live in groups'] <- 1
+animals[c('lion','human','spider'),'endangered'] <- c(1,0,0)
+
+animals
 ```
 
+::: footer
+Binary data
+:::
+
+## Calculating dissimilarity with binary data 
+
+::: {style="font-size: 70%;"}
+
+Remember, distance or dissimilarity is calculated between each pair of objects. 
+
+The two methods considered here for binary data, 'simple matching' and 'Jaccard', differ in one important aspect: the treatment of 'double zeros'.
+<br>
+:::
+
+::::{.columns}
+:::{.column}
+### Simple matching
+::: {style="font-size: 70%;"}
+What proportion of variables do the objects have different values?
+:::
+```{r}
+animals[c('bee','cat'),] |> 
+  t() |> 
+  data.frame() |> 
+  mutate(`Same?` = bee==cat)
+```
+::: {style="font-size: 70%;"}
+Dissimilarity =      
+      4 different / 6 variables = 0.67
+:::
+:::
+:::{.column}
+### Jaccard
+::: {style="font-size: 70%;"}
+What proportion of variables have different values, excluding double zeros?
+:::
+```{r}
+#| warning: false
+animals[c('bee','cat'),] |> 
+  t() |> data.frame() |> 
+  group_by(bee, cat) |> 
+  summarise(n = n())
+```
+::: {style="font-size: 70%;"}
+Dissimilarity =       
+      4 different / 5 non-double-zeros = 0.8
+:::
+:::
+::::
 
 
+::: footer
+Binary data
+:::
+
+---
+
+::::{.columns}
+:::{.column}
+### Simple matching
+::: {style="font-size: 70%;"}
+Manhattan distance is simply the sum of absolute differences. For binary data, the '`manhattan`' method is equivalent to simple matching without dividing by the number of variables.
+:::
+```{r}
+#| fig-height: 4
+#| fig-width: 4
+dist(animals, method='manhattan') |> hclust() |>
+ fviz_dend(horiz = T, main = "") + ylim(6,-1.5)
+```
+:::
+
+:::{.column}
+### Jaccard
+::: {style="font-size: 70%;"}
+The '`binary`' method in the `dist()` function is equivalent to Jaccard dissimilarity.
+<br>
+<br>
+<br>
+:::
+```{r}
+#| fig-height: 4
+#| fig-width: 4
+dist(animals, method='binary') |> hclust() |> 
+ fviz_dend(horiz = T, main = "") + ylim(1,-.4)
+```
+
+:::
+::::
+
+
+::: footer
+Binary data
+:::
+
+
+
+# Summary {.background-black}
+
+::: footer
+Hierarchical cluster analysis
+:::
+
+## Summary {.smaller}
+
+:::{.incremental}
+
+- Cluster analysis is unsupervised classification. There is no target variable. 
+
+- The goal of cluster analysis is to create a new system of groups that have low within-group dissimilarity and high between-group dissimilarity, with respect to our features.
+
+- There are many methods of cluster analysis. We have focused on:
+     - $k$-means
+     - agglomerative hierarchical clustering
+     
+     Other methods include $k$-medoids and divisive hierarchical clustering.
+
+- Euclidean distance, or 'straight-line' distance, is the most common measure of dissimilarity for numerical variables, but there are other options.
+
+- Different types of data require different measures. For example, 'simple matching' or 'Jaccard' can be used for binary variables. Different measures often yield different results.
+
+- Metrics such as 'silhouette' can help decide how many groups to make. 
+
+:::
 
