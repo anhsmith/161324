@@ -36,7 +36,7 @@ The `itemFrequency` function summarises the frequencies of each item across tran
 Groceries |> itemFrequency()
 ```
 
-### Try yourself
+### Try it yourself
 
 1. `itemFrequencyPlot()` can be used to produce a plot of the above frequencies. Explore this function, e.g. you may wish to play with the `support` parameter to limit which items are on the plot.
 
@@ -49,7 +49,7 @@ Let's now mine the association rules using `apriori`:
 groc <- apriori(Groceries, parameter=list(support=0.001, confidence=0.5))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. How many rules are produced?
 
@@ -62,7 +62,7 @@ We can sort the rules via `sort()`, which can then be inspected by limiting the 
 groc |> sort(by="support") |> head(n=5) |> inspect()
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Considering the top 5 rules by support above, what are your interpretations of their confidence and lift?
 
@@ -75,7 +75,7 @@ We can use the `subset` command to filter rules. e.g. to find rules where the le
 groc |> subset(lhs %in% "mustard") |> inspect()
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Take a look at the rule with mustard in the left hand side that has highest lift. You should notice it has the lowest confidence. Considering the formulas for confidence and lift, explain how this happens.
 
@@ -86,7 +86,7 @@ Both red and white wine are included as separate items in the database. To find 
 groc |> subset(lhs %pin% "wine") |> inspect()
 ```
 
-### Try yourself
+### Try it yourself
 
 We will investigate itemsets that contain `beer` and `liquor`. Note that some of these will be on the `lhs` and some may be on the `rhs` of the rules.
 
@@ -103,7 +103,7 @@ To find rules that contain multiple items, we can use the `%ain%` operator:
 groc |> subset(lhs %ain% c("whole milk", "white bread")) |> inspect()
 ```
 
-### Try yourself
+### Try it yourself
 
 1. Which items are also likely to be purchased if the transaction contains both waffles and candy? Start by finding rules where both waffles and candy are on the left hand side.
 
@@ -150,7 +150,7 @@ Let's now mine the association rules from the bank data set.
 bank_rules <- apriori(bank, parameter=list(support=0.001, confidence=0.5))
 ```
 
-### Try yourself
+### Try it yourself
 
 1. How many rules are produced?
 
@@ -162,4 +162,4 @@ bank_rules <- apriori(bank, parameter=list(support=0.001, confidence=0.5))
 
 5. Find rules identifying the services that customers that take out an automobile service (`AUTO`) utilise.
 
-6. Now, try yourself, investigate this dataset further. For example, investigate retirement accounts or trust accounts. What rules can you find out? What are the implication of the rules?
+6. Now, Try it yourself, investigate this dataset further. For example, investigate retirement accounts or trust accounts. What rules can you find out? What are the implication of the rules?

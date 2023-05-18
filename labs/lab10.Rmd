@@ -3,17 +3,14 @@ title: 'Workshop 10: Clustering'
 output: html_document
 ---
 
-In this workshop we'll be looking at clustering data. Clustering is an unsupervised
-learning technique - there is no known truth, and we're instead trying to group the
-observations into a fairly small number of clusters such that all observations in a
-clusters are closely related, while observations from different clusters differ.
+In this workshop we'll be looking at clustering data. Clustering is an unsupervised learning technique - there is no known truth, and we're instead trying to group the observations into a fairly small number of clusters such that all observations in a clusters are closely related, while observations from different clusters differ.
 
 The techniques we'll cover include:
 
 - Hierarchical clustering
 - k-means clustering
 - Partitioning around Medioids
-- Silhouttes
+- Silhouette measure
 
 ## The 2020 New Zealand General Election
 
@@ -44,9 +41,25 @@ candidate <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/nzelect/2020_cand
 
 1. Take a look at the `party` data. You should notice you have the percentage vote for each party (in separate columns) by the electorate (in rows). Summarise how each party does on average across the electorates.
 
-2. Produce a long-form dataset `party_long` by pivoting the vote columns into `Party` and `PartyVote` columns. Use this to produce boxplots of the `PartyVote` by `Party` to show the variation across the electorates.
+```{r}
+party |>
+  summarise(across(-Electorate, mean))
+```
 
-3. Produce a long-form version of the `candidate` data, and combine both into a `all_long` dataset. Use this to do a scatterplot of the person vote versus the party vote, coloured by Party.
+2. Make a Principal Component Analysis plot of the data to see if there are any clear 'clusters' of points.
+
+```{r}
+library(factoextra)
+
+party |>
+  column_to_rownames("Electorate") |> 
+  prcomp() |> 
+  fviz_pca_ind(repel=T, labelsize=2)
+```
+
+3. Produce a long-form dataset `party_long` by pivoting the vote columns into `Party` and `PartyVote` columns. Use this to produce boxplots of the `PartyVote` by `Party` to show the variation across the electorates.
+
+4. Produce a long-form version of the `candidate` data, and combine both into a `all_long` dataset. Use this to do a scatterplot of the person vote versus the party vote, coloured by Party.
 
 
 We'll next look at clustering the `party` data using hierarchical clustering:
@@ -66,8 +79,7 @@ ggdendrogram(party.hc1)
 
 2. Which electorates tend to cluster together?
 
-Let's now look into the clustering a little more, by using `cutree` to break things down into (say) 5
-clusters:
+Let's now look into the clustering a little more, by using `cutree` to break things down into (say) 5 clusters:
 
 ```{r}
 party.cl1 <- party |> 
@@ -98,15 +110,12 @@ all <- party |> rename_with(~ paste("Party", ., sep=":"), .cols=-Electorate) |>
 
 ### Try it yourself
 
-Using the combined voting data `all`, perform hierarchical clustering and investigate which
-electorates tend to vote similarly when both party and candidate votes are considered.
+Using the combined voting data `all`, perform hierarchical clustering and investigate which electorates tend to vote similarly when both party and candidate votes are considered.
 
 
 ## Clustering synthetic data
 
-In this exercise we have 9 numerical measurements (labelled A through I)
-from a synthetic data set. Our goal is to group the observations with
-common characteristics together.
+In this exercise we have 9 numerical measurements (labelled A through I) from a synthetic data set. Our goal is to group the observations with common characteristics together.
 
 ```{r, message=FALSE}
 synth <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/syn-cluster.csv")

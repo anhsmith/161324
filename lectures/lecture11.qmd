@@ -1,0 +1,662 @@
+---
+title: "Association Rule Analysis"
+subtitle: "161324 Data Mining | Lecture 11"
+format: 
+  revealjs:
+    width: 1050
+    height:	700
+    transition: fade
+    theme: [default, myquarto.scss]
+    slide-number: c/t  
+    logo: graphics/L_Color.png
+    styles:
+      - revealjs.dark:
+        background-color: #222
+        color: #fff
+execute:
+  echo: true
+---
+
+
+```{r}
+#| echo: false
+library(tidyverse)
+library(arules)
+library(arulesViz)
+library(kableExtra)
+theme_set(theme_bw())
+colm <- c("#004B8D", "#E4A024", "#9A3324", "#5E6738", "#D45D00", "#83786F",
+          "#A8AD00", "#C5B783", "#4F758B", "#98A4AE", "#0090E9")
+
+```
+
+<!--
+Sources:
+
+https://rpubs.com/cliex159/872663
+
+https://datascienceplus.com/a-gentle-introduction-on-market-basket-analysis%E2%80%8A-%E2%80%8Aassociation-rules
+
+https://towardsdatascience.com/a-gentle-introduction-on-market-basket-analysis-association-rules-fa4b986a40ce
+
+-->
+
+
+## Association Rule Analysis
+
+Association Rule Analysis (also known as 'Market Basket Analysis') is a set of tools for analysing co-occurrence in a large set of binary variables. It is pattern discovery, 'unsupervised' learning. 
+
+It developed for transactional data. Which combinations of items are often bought in the same transaction? If customer buys $A$, what is the probability that they'll also buy $B$? 
+
+Essentially, it is just conditional probability.
+
+```{r}
+#| echo: false
+knitr::include_graphics(path = "graphics/supermarket_trolleys.png")
+```
+
+
+## Association Rule Analysis {.smaller}
+
+Applications
+
+- General insights
+- Optimising layout of items in stores and catalogues
+- Direct marketing
+- Designing 'bundles' of products
+- "You might also like..." sections of websites
+
+Examples
+
+- People who buy gin also tend to buy tonic
+- WalMart discovered that males who bought nappies on Friday afternoons also tended to buy beer (true story!)
+- If a movie was directed by Tim Burton, it is likely to star Johnny Depp and Helena Bonham Carter
+
+
+## Association Rule Analysis: basic steps {.scrollable .smaller}
+
+
+::::::{.fragment fragment-index=1}
+::::: {.fragment .fade-out fragment-index=2}
+:::{.absolute top=150 left=400}
+```{r}
+#| echo: true
+marketdb <- tribble(~transaction, ~items,
+              1, c('bread', 'milk'),
+              2, 'beer',
+              3, 'butter',
+              4, c('bread', 'butter', 'milk'),
+              5, c('bread', 'butter'),
+              6, c('bread', 'beer'))
+```
+:::
+:::::
+::::::
+
+
+:::::{.fragment fragment-index=1}
+:::{.absolute top=50 left=0}
+```{r}
+#| echo: false
+marketdb |> 
+  mutate(items = map_chr(items, paste, collapse=", ")) |>
+  knitr::kable(caption=
+    "<span style='font-size: 24px;'>
+    1. List of transactions
+    </span>"
+  ) 
+```
+:::
+:::::
+
+:::::{.fragment fragment-index=2}
+:::: {.fragment .fade-out fragment-index=5}
+:::{.absolute top=50 left=290}
+```{r}
+#| echo: false
+marketdb_binary <- marketdb |> 
+    unnest(items) |>
+    mutate(count = 1) |>
+    pivot_wider(names_from=items, 
+                values_from=count, 
+                values_fill = 0) |>
+    select(-transaction)
+
+marketdb_binary |> 
+  knitr::kable(caption = 
+    "<span style='font-size: 24px;'>
+    2. Binary indicators
+    </span>"
+    ) 
+```
+:::
+::::
+:::::
+
+:::::{.fragment fragment-index=3}
+:::: {.fragment .fade-out fragment-index=5}
+:::{.absolute top=50 left=620}
+```{r}
+#| echo: false
+
+coocc <- bind_cols(
+  Item=c("bread","milk","beer","butter",
+         "butter,milk","bread,milk", "bread,butter"),
+  bind_rows(
+    marketdb_binary |> 
+      filter(bread==1) |> 
+      summarise_all(.funs = 'sum'),
+    marketdb_binary |> 
+      filter(milk==1) |> 
+      summarise_all(.funs = 'sum'),
+    marketdb_binary |> 
+      filter(beer==1) |> 
+      summarise_all(.funs = 'sum'),
+    marketdb_binary |> 
+      filter(butter==1) |> 
+      summarise_all(.funs = 'sum'),
+    marketdb_binary |> 
+      filter(butter==1 & milk==1) |> 
+      summarise_all(.funs = 'sum'),
+    marketdb_binary |> 
+      filter(bread==1 & milk==1) |> 
+      summarise_all(.funs = 'sum'),
+    marketdb_binary |> 
+      filter(bread==1 & butter==1) |> 
+      summarise_all(.funs = 'sum')
+    )
+)
+
+coocc |> 
+  knitr::kable(caption = 
+    "<span style='font-size: 24px;'>
+    3. Tabulate co-occurrences
+    </span>"
+    ) 
+```
+:::
+::::
+:::::
+
+::::{.fragment fragment-index=4}
+:::{.absolute top=350 left=0}
+```{r}
+#| echo: false
+#| output: false
+#| message: false
+marketdb_rules <- marketdb |>
+  pull(items) |>
+  as("transactions") |> 
+  apriori(parameter=list(support=0.01, confidence=0.01)) |> 
+  inspect() 
+```
+
+```{r}
+#| echo: false
+marketdb_rules |>  
+ knitr::kable(caption = 
+    "<span style='font-size: 24px;'>
+    4. Calculate rules and statistics
+    </span>"
+    ) 
+```
+:::
+::::
+
+::::{.fragment fragment-index=5}
+:::{.absolute bottom=400 left=400}
+```{r}
+#| echo: true
+#| eval: false
+#| code-font-size: 1.2em
+library(arules)
+marketdb <- tribble(~transaction, ~items,
+              1, c('bread', 'milk'),
+              2, 'beer',
+              3, 'butter',
+              4, c('bread', 'butter', 'milk'),
+              5, c('bread', 'butter'),
+              6, c('bread', 'beer'))
+marketdb |>
+  pull(items) |>
+  as("transactions") |> 
+  apriori(parameter=list(support=0.01, 
+                         confidence=0.01)) |> 
+  inspect() 
+```
+:::
+::::
+
+
+## Terminology {.smaller}
+
+:::{.incremental}
+- An <span class="inline-heading">'itemset'</span> is a set of one or more items.       
+An itemset with $k$ items is called a '$k$-itemset'.
+
+  - $\mathrm{\{bread\}}$ is a 1-itemset.
+  - $\mathrm{\{bread,milk\}}$ is a 2-itemset.
+
+- A <span class="inline-heading">'rule'</span> is defined for one itemset to another, as in $\mathrm{\{bread\}} \Rightarrow \mathrm{\{butter\}}$. 
+
+  - A rule's left-hand-side itemset is the 'lhs' or 'antecedent' (here, $\mathrm{\{bread\}}$ )
+  - A rule's right-hand-side itemset is the 'rhs' or 'consequent' (here, $\mathrm{\{butter\}}$ )
+
+  - The rule $\mathrm{\{bread\}} \Rightarrow \mathrm{\{butter\}}$ may be read as '*bread implies butter*'. It captures the idea that knowing a customer is buying bread changes the probability that they will buy butter.
+
+     
+:::
+
+## Statistics {.smaller}
+
+For any rule, one can calculate 'support', 'coverage', 'confidence', and 'lift'. 
+
+:::{.fragment}
+<span class="inline-heading1">Support</span> for a rule tells us how often both the itemsets involved co-occur together in the context of the whole dataset. In probability terms, $\text{P}(A \cap B)$.
+
+$$\text{Support}(A\Rightarrow B) = \frac{\text{Number of transactions that contain } A \text{ and } B}{\text{Total number of transactions}}$$
+:::
+
+
+:::{.fragment}
+<span class="inline-heading3">Coverage</span> is simply the support of the antecedent of a rule. In probability terms, $\text{P}(A)$.
+
+$$\text{Coverage}(A \Rightarrow B) = \text{Support}(A) = \frac{\text{Number of transactions that contain } A}{\text{Total number of transactions}}$$
+:::
+
+
+## Statistics {.smaller}
+
+:::{.fragment}
+<span class="inline-heading2">Confidence</span> measures the *reliability* or *strength* of a rule. It is frequency of the consequent in transactions that include the antecedent. In probability terms, $\text{P}(B|A)$.
+
+$$\text{Confidence}(A \Rightarrow B) = 
+\frac{\text{Support}(A \cup B)}{\text{Support}(A)} = 
+\frac{\text{Number of transactions that contain } A \text{ and }    B}{\text{Number of transactions that contain } A }$$
+
+:::
+:::{.fragment}
+<span class="inline-heading1">Expected Confidence</span> is the 'null' level of confidence for $B$, the baseline frequency of $B$ in the context of the entire dataset. It is simply the support for $B$, or $\text{P}(B)$. 
+
+$$\text{Expected Confidence}(A \Rightarrow B) = \text{Support}(B)
+$$
+:::
+:::{.fragment}
+<span class="inline-heading4">Lift</span> is a relativised measure of confidence. It measures how much the occurrence of $A$ changes the probability of $B$. Lift > 1 indicates that $A$ increases the probability of $B$. In probability terms, $\frac{\text{P}(B|A)}{\text{P}(B)}$. 
+
+$$\text{Lift}(A \Rightarrow B) = 
+\frac{\text{Confidence}(A \Rightarrow B)}{\text{Expected Confidence}(A \Rightarrow B)} = 
+\frac{\text{Support}(A \cup B)}{\text{Support}(A)\text{Support}(B)}$$
+:::
+
+:::{.fragment}
+There are other, equivalent formulations of these measures, and other measures we can calculate (see [Study Guide](https://www.massey.ac.nz/~jcmarsha/161324/notes/association-rule-mining.html)), but these are the ones I find most intuitive.
+:::
+
+
+## Our simple example {.smaller}
+
+:::{.absolute left=750 top=0}
+```{r}
+#| echo: false
+library(DT)
+bind_cols(marketdb, marketdb_binary) |> 
+  select(-transaction) |> 
+  DT::datatable(width=500, height=320, 
+                # autoWidth= T,
+                options = list(ordering = TRUE, paging=FALSE, #autoWidth=TRUE, 
+                               searching=FALSE, info=FALSE)) |> 
+  DT::formatStyle(columns = 1:5, fontSize = '70%', lineHeight = '50%')
+```
+:::
+
+
+:::::{.absolute top=100 left=0}
+::::{.fragment fragment-index=1}
+::: {.fragment .fade-out fragment-index=2}
+```{r}
+#| echo: false
+marketdb_rules |>  
+ knitr::kable() |> 
+  kable_styling(font_size = 18)
+```
+:::
+::::
+:::::
+
+:::::{.absolute top=100 left=0}
+::::{.fragment fragment-index=2}
+::: {.fragment .fade-out fragment-index=4}
+```{r}
+#| echo: false
+marketdb_rules |>  
+ knitr::kable() |> 
+  kable_styling(font_size = 18) |> 
+  row_spec(10, background = "yellow")
+```
+:::
+::::
+:::::
+
+::::{.fragment fragment-index=3}
+:::{.absolute left=750 top="50%"}
+```{r}
+#| echo: false
+marketdb_rules[10,] |> 
+ knitr::kable() |> 
+  kable_styling(font_size = 18)
+```
+:::
+::::
+
+
+## Our simple example {.smaller}
+
+:::{.absolute left=750 top=0}
+```{r}
+#| echo: false
+library(DT)
+bind_cols(marketdb, marketdb_binary) |> 
+  select(-transaction) |> 
+  DT::datatable(width=500, height=320, 
+                # autoWidth= T,
+                options = list(ordering = TRUE, paging=FALSE, #autoWidth=TRUE, 
+                               searching=FALSE, info=FALSE)) |> 
+  DT::formatStyle(columns = 1:5, fontSize = '70%', lineHeight = '50%')
+```
+:::
+
+:::{.absolute left=750 top="50%"}
+```{r}
+#| echo: false
+marketdb_rules[10,] |> 
+ knitr::kable() |> 
+  kable_styling(font_size = 18)
+```
+:::
+
+:::::{.left-code-wide}
+
+<span class="inline-heading1">Support(bread $\Rightarrow$ milk)</span>       
+= the proportion of transactions with both bread and milk
+
+:::{.fragment}
+= 2 / 6 = 0.333333<br><br>
+:::
+
+:::{.fragment}
+<span class="inline-heading2">Confidence(bread $\Rightarrow$ milk)</span>       
+= the proportion of transactions with bread that also contain milk
+:::
+
+:::{.fragment}
+= 2 / 4 = 0.5<br><br>
+:::
+
+:::{.fragment}
+<span class="inline-heading3">Coverage(bread $\Rightarrow$ milk)</span>       
+= the support for bread only
+:::
+
+:::{.fragment}
+= 4 / 6 = 0.666667<br><br>
+:::
+
+:::{.fragment}
+<span class="inline-heading4">Lift(bread $\Rightarrow$ milk)</span>       
+= confidence / expected confidence
+:::
+
+:::{.fragment}
+= 0.5 / 0.333333 = 1.5
+:::
+
+:::::
+
+
+
+
+## Our simple example {.smaller}
+
+:::::{.left-code-wide}
+
+<span class="inline-heading1">Support(bread $\Rightarrow$ milk)</span>       
+= the proportion of transactions with both bread and milk
+
+= 2 / 6 = 0.333333<br><br>
+
+<span class="inline-heading2">Confidence(bread $\Rightarrow$ milk)</span>       
+= the proportion of transactions with bread that also contain milk
+
+= 2 / 4 = 0.5<br><br>
+
+<span class="inline-heading3">Coverage(bread $\Rightarrow$ milk)</span>       
+= the support for bread only
+
+= 4 / 6 = 0.666667<br><br>
+
+<span class="inline-heading4">Lift(bread $\Rightarrow$ milk)</span>       
+= confidence / expected confidence
+
+= 0.5 / 0.333333 = 1.5
+
+:::::
+
+:::::{.right-code}
+<br>
+<span class="inline-col1">
+33% of customers bought both bread and milk.
+</span>
+<br>
+<br>
+<br>
+<br>
+<span class="inline-col2">
+If a customer bought bread, there's a 50% chance they also bought milk.
+</span>
+<br>
+<br>
+<br>
+<br>
+<span class="inline-col3">
+67% of customers bought bread.
+</span>
+<br>
+<br>
+<br>
+<br>
+<br>
+<span class="inline-col4">
+Overall, 33% of customers bought milk (expected confidence).        
+Knowing a customer bought bread makes buying milk 50% more likely.
+</span>
+
+:::::
+
+## A multiplicity of rules {.smaller}
+
+:::{.incremental}
+- For $d$ items, there are $3^d - 2^{d+1} + 1 \ \ $ potential rules. 
+
+- In our example, there are 4 items, giving 50 potential rules. 
+
+- Most datasets of this kind have many many more. With 20 items, there are nearly 35 billion potenial rules!
+
+- The main challenge and triumph of association rule analysis is finding the useful rules amongst the huge number of useless ones with algorithms like 'apriori'.
+
+:::
+
+## The apriori algorithm {.smaller}
+
+::::{.columns}
+:::{.column width="30%"}
+<br>The apriori algorithm uses basic logic to reduce dramatically the number of rules that are explored.
+
+It works on the principle that, if $A$ is infrequent, then all itemsets containing $A$ are also infrequent.
+<br><br><br>
+
+:::::{.fragment fragment-index=3}
+Because the itemset $\{A,B\} \ $ has low support and/or confidence, all these other itemsets can be discarded.
+:::::
+
+:::::{.fragment fragment-index=4}
+Other algorithms used for this task include 'Eclat' and 'FP-growth'.
+:::::
+
+:::
+::::
+
+:::{.absolute left="35%" top="10%"}
+![](graphics/apriori1.png)
+:::
+
+::::{.fragment fragment-index=1}
+:::{.absolute left="35%" top="10%"}
+![](graphics/apriori2.png)
+:::
+::::
+
+
+::::{.fragment fragment-index=2}
+:::{.absolute left="35%" top="10%"}
+![](graphics/apriori3.png)
+:::
+::::
+
+
+::::{.fragment fragment-index=3}
+:::{.absolute left="35%" top="10%"}
+![](graphics/apriori4.png)
+:::
+::::
+
+
+## Example: IMDB movie genres {.scrollable}
+
+IMDB (Internet Movie DataBase) has an [enormous data repository](https://datasets.imdbws.com/).
+
+Each movie has at least one genre, such as 'Drama', 'Action', 'Comedy', 'Documentary', 'Family', 'Fantasy', 'Sci-Fi', etc. Many movies have several genre labels.
+
+We'll use the `arules` package analyse co-occurrences of genres in movies since 2020. Which genres imply which others?
+
+```{r}
+#| cache: true
+library(arules)
+movies <- read_csv("https://massey.ac.nz/~anhsmith/data/movie_genres.csv")
+```
+
+---
+
+:::::{.columns}
+
+::::{.column width="32%"}
+character strings<br><br>
+```{r}
+print(movies,n=17)
+```
+::::
+
+::::{.column width="32%"}
+:::{.fragment}
+list of vectors<br>
+```{r}
+movies |>
+  pull(genres) |>
+  strsplit(",\\s*") |> 
+  head(17)
+```
+:::
+::::
+
+::::{.column width="36%"}
+:::{.fragment}
+'transactions' object
+```{r}
+movt <- movies |>
+  pull(genres) |>
+  strsplit(",\\s*") |>
+  as("transactions")
+
+movt |> head(17) |> inspect()
+```
+:::
+::::
+
+:::::
+
+## Most frequent items
+
+```{r}
+#| eval: false
+itemFrequencyPlot(movt, topN=27, horiz=T)
+```
+
+:::{.absolute left="50%" bottom=0}
+```{r}
+#| fig-width: 5
+#| fig-height: 8
+#| echo: false
+itemFrequencyPlot(movt, topN=27, horiz=T)
+```
+:::
+
+## Extracting rules with `apriori`
+
+```{r}
+rules <- movt |> apriori(parameter=list(support=0.01, confidence=0.2))
+```
+
+## Extracting rules with `apriori`
+
+```{r}
+#| eval: false
+rules <- movt |> apriori(parameter=list(support=0.01, confidence=0.2))
+rules |> inspectDT()
+```
+
+
+```{r class='dt-smaller'}
+#| echo: false
+rules |> inspectDT() 
+```
+
+## Drama is central
+
+```{r}
+plot(rules, method = "paracoord", shading = "confidence")
+```
+
+## Drama is central
+
+```{r}
+#| eval: false
+plot(rules, method = "graph", engine = "htmlwidget")
+```
+
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+#| echo: false
+plot(rules, method = "graph", engine = "htmlwidget")  |>   
+  visNetwork::visNodes(font=list(size=25), scaling=list(label=list(enabled=FALSE)))
+```
+
+## Summary {.smaller}
+
+:::{.incremental}
+
+- Association rule mining is a technique used to discover interesting relationships or patterns in (usually) large datasets.
+
+- It is commonly applied in market basket analysis, where the goal is to identify associations between items frequently purchased together. Other applications include recommendation systems, customer behavior analysis, and fraud detection.
+
+- Association rules are typically represented in the form: $A \Rightarrow B$, where the antecedent $A$ and consequent $B$ are itemsets. $A \Rightarrow B$ implies that if $A$ occurs, $B$ is likely to occur as well.
+
+- Key metrics used to evaluate association rules:
+  - Support: Measures the frequency of occurrence of an itemset (or the combination of itemsets in a rule) as a proportion of the dataset.
+  - Confidence: Indicates the conditional probability of the consequent itemset given the antecedent itemset.
+  - Lift: Measures the degree to which the antecedent increases the consequent relative to the baseline support for the consequent.
+
+- The apriori algorithm is a popular and efficient method for finding interesting association rules while reducing the vast multiplicity of possible rules that need to be considered.
+
+:::
