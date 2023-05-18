@@ -48,7 +48,7 @@ Association Rule Analysis (also known as 'Market Basket Analysis') is a set of t
 
 It developed for transactional data. Which combinations of items are often bought in the same transaction? If customer buys $A$, what is the probability that they'll also buy $B$? 
 
-Essentially, it is just conditional probability.
+Essentially, it is just conditional probability and some search algorithms.
 
 ```{r}
 #| echo: false
