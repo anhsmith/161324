@@ -716,6 +716,12 @@ km_all_k2 <- kmeans(food_norm, centers=2, nstart=50)
 fviz_cluster(km_all_k2, data=food_norm, repel=T, ggtheme=theme_bw())
 ```
 
+::: footer
+$k$-means cluster analysis
+:::
+
+## Cluster analysis for nine variables
+
 ```{r}
 #| fig-width: 8
 #| fig-height: 7

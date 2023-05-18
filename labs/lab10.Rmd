@@ -3,6 +3,17 @@ title: 'Workshop 10: Clustering'
 output: html_document
 ---
 
+<style>
+.answer {
+  background-color: #d0ebff;
+  padding: 20px;
+}
+
+.answer pre {
+  background-color: #d0ebff;
+}
+</style>
+
 In this workshop we'll be looking at clustering data. Clustering is an unsupervised learning technique - there is no known truth, and we're instead trying to group the observations into a fairly small number of clusters such that all observations in a clusters are closely related, while observations from different clusters differ.
 
 The techniques we'll cover include:
@@ -37,16 +48,15 @@ party  <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/nzelect/2020_party.c
 candidate <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/nzelect/2020_candidate.csv")
 ```
 
-### Try it yourself
 
-1. Take a look at the `party` data. You should notice you have the percentage vote for each party (in separate columns) by the electorate (in rows). Summarise how each party does on average across the electorates.
+Let's take a look at the `party` data. You should notice you have the percentage vote for each party (in separate columns) by the electorate (in rows). Summarise how each party does on average across the electorates.
 
 ```{r}
 party |>
   summarise(across(-Electorate, mean))
 ```
 
-2. Make a Principal Component Analysis plot of the data to see if there are any clear 'clusters' of points.
+Now, we'll make a Principal Component Analysis plot of the data to see if there are any clear 'clusters' of points.
 
 ```{r}
 library(factoextra)
@@ -57,51 +67,142 @@ party |>
   fviz_pca_ind(repel=T, labelsize=2)
 ```
 
-3. Produce a long-form dataset `party_long` by pivoting the vote columns into `Party` and `PartyVote` columns. Use this to produce boxplots of the `PartyVote` by `Party` to show the variation across the electorates.
+### Try it yourself
 
-4. Produce a long-form version of the `candidate` data, and combine both into a `all_long` dataset. Use this to do a scatterplot of the person vote versus the party vote, coloured by Party.
+**1. Produce a long-form dataset `party_long` by pivoting the vote columns into `Party` and `PartyVote` columns. Use this to produce boxplots of the `PartyVote` by `Party` to show the variation across the electorates.**
 
+:::{class="answer"}
 
-We'll next look at clustering the `party` data using hierarchical clustering:
+:::
+
+**2. Produce a long-form version of the `candidate` data, and combine both into a `all_long` dataset. Use this to do a scatterplot of the person vote versus the party vote, coloured by Party.**
+
+:::{class="answer"}
+
+:::
+
+---
+
+Next, we'll next look at clustering the `party` data using hierarchical clustering with average linkage.
 
 ```{r}
 party.hc1 <- party |>
   column_to_rownames("Electorate") |>
   dist() |>
-  hclust(method='single')
+  hclust(method='average')
 
 ggdendrogram(party.hc1)
 ```
 
 ### Try it yourself
 
-1. Try performing hierarchical clustering with average or complete linkage.
+**1. Perform a hierarchical clustering with single and/or complete linkage. Show the dendrograms.**
 
-2. Which electorates tend to cluster together?
+:::{class="answer"}
 
-Let's now look into the clustering a little more, by using `cutree` to break things down into (say) 5 clusters:
+:::
+
+**2. Which electorates tend to cluster together?**
+
+:::{class="answer"}
+
+:::
+
+---
+
+
+Let's see how many clusters look sensible for this dataset.
+
+```{r}
+party |> 
+  column_to_rownames(var="Electorate") |> 
+  fviz_nbclust(hcut, method = "silhouette")
+```
+
+Note that this is based on the 'Ward' linkage criterion -- that is, the criterion used to measure the distances for groups of objects -- because it is the default for the `hcut` function. "Ward.D2" usually gives similar results to average linkage.
+
+Now let's make the cut at 6 (the result for 3, which is favoured by the silhouette metric, is a bit dull). 
+
+Here's one way to do it, with the original `party.hc1` object we made.
 
 ```{r}
 party.cl1 <- party |> 
-  mutate(Cluster = party.hc1 |> cutree(k=5))
-
-party.cl1 |>
-  group_by(Cluster) |>
-  summarise(across(-Electorate, mean), size=n())
+  mutate(Cluster = party.hc1 |> cutree(k=6))
 ```
 
-We can see that cluster 5 (The Maori electorates) all teend to have a much higher vote for the Maori and Other parties and a lower vote for National, while cluster 1 tends to vote more for National. Cluster 3 are South Auckland electorates that vote very strongly for Labour, while Cluster 2 and 4 vote more strongly for the Greens (two Wellington electorates and Dunedin).
+Here's another option using the `hcut` function, which does the distance matrix, the cluster analysis, and the cutting all in one step.
+
+```{r}
+party_hcut6_ave <- party |> 
+  column_to_rownames("Electorate") |> 
+      hcut(hc_method="average", k=6)
+
+party.cl1 <- party |> 
+  mutate(Cluster = party_hcut6_ave$cluster)
+
+party.cl1 |> group_by(Cluster) |>
+  summarise(across(-Electorate, mean), size=n())
+
+```
+
+We can display this information with a radar chart.
+
+```{r, fig.height=8, fig.width=12}
+library(ggradar)
+library(scales)
+
+party.cl1 |> 
+  # rescale by maximum of each party
+  mutate_at(vars(Act:Other), rescale) |> 
+  group_by(Cluster) |>
+  summarise(across(-Electorate, mean), size=n()) |> 
+  # make cluster labels with sizes
+  mutate(Cluster = paste0("Cluster ", Cluster," (n=",size,")")) |> 
+  select(-size) %>% 
+  ggradar(legend.position = "none") +
+  facet_wrap(~Cluster) 
+```
+We can see that there is one dominant Cluster 3, containing 42 electorates that are hot on National and Act. Cluster 1 is strong for the Greens, Act. Cluster 2 are balanced between Labour, National, and Act. Cluster 4 contains three electorates that are extremely strong for Labour. Cluster 5 is one very Green electorate. Cluster 6 comprises the Maori electorates, which all tend to have a much higher vote for the Maori and Other parties.
+
+Let's look at a Principal Components Analysis plot with the clusters overlaid.
+
+```{r}
+library(factoextra)
+
+party |> 
+  column_to_rownames("Electorate") |> 
+  hcut(k=6, hc_method="average") |> 
+  fviz_cluster(data=party, repel=T, labelsize = 6, 
+               show.clust.cent = F, ggtheme=theme_bw(), main="")
+```
+Two notes of warning here:
+
+1. The cluster labels may be different when we use a different function (`hcut()` vs `hclust() |> cutree()`).
+
+2. The PCA axes are different to the first PCA plot above. I suspect they use two different methods, one of which automatically rescales the variables.
+
 
 ### Try it yourself
 
-1. Do the other linkage methods result in the same clustering?
+**1. Do the linkage methods result in the same clusters?**
 
-2. Do the same analysis of the `candidate` vote. How do the electorates cluster? Choose a suitable number of clusters based on the dendogram and then look into which electorates fall in each cluster.
+:::{class="answer"}
+
+:::
+
+**2. Do the analysis with average linkage using the `candidate` vote. How do the electorates cluster? Choose a suitable number of clusters based on the dendogram and/or silhouette measure and then look into which electorates fall in each cluster.**
+
+:::{class="answer"}
+
+:::
+
+---
 
 We'll now combine the two datasets so we can look at them together:
 
 ```{r}
-all <- party |> rename_with(~ paste("Party", ., sep=":"), .cols=-Electorate) |>
+all <- party |> 
+  rename_with(~ paste("Party", ., sep=":"), .cols=-Electorate) |>
   left_join(
     candidate |> rename_with(~ paste("Cand", ., sep=":"), .cols=-Electorate),
     by = 'Electorate'
@@ -110,8 +211,13 @@ all <- party |> rename_with(~ paste("Party", ., sep=":"), .cols=-Electorate) |>
 
 ### Try it yourself
 
-Using the combined voting data `all`, perform hierarchical clustering and investigate which electorates tend to vote similarly when both party and candidate votes are considered.
+**1. Using the combined voting data `all`, perform hierarchical clustering and investigate which electorates tend to vote similarly when both party and candidate votes are considered.**
 
+:::{class="answer"}
+
+:::
+
+---
 
 ## Clustering synthetic data
 
@@ -123,10 +229,15 @@ synth <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/syn-cluster.csv")
 
 ### Try it yourself
 
-1. Start by using hierarchical clustering to look at this data. How many clusters look sensible?
+**1. Start by using hierarchical clustering to look at this data. How many clusters look sensible?**
 
+:::{class="answer"}
 
-We'll next try using k-means clustering, with the following code fitting k-means for k=1 through 10:
+:::
+
+---
+
+Next we'll use k-means clustering. The following code fits k-means for k = 1 through 10:
 
 ```{r}
 set.seed(1234)
@@ -141,10 +252,19 @@ km_all
 
 ### Try it yourself
 
-1. Produce a plot of the within sum of squares against $k$. How many are clusters do you think
-are optimal?
+**1. Produce a plot of the within sum of squares against $k$. How many are clusters do you think are optimal?**
 
-2. Check the scales on each of the variables in `synth`. You should notice they are different!
+:::{class="answer"}
+
+:::
+
+**2. Check the scales on each of the variables in `synth`. You should notice they are different!**
+
+:::{class="answer"}
+
+:::
+
+---
 
 We can rescale the data using a `recipe` as usual:
 
@@ -158,25 +278,58 @@ synth.scale <- bake(scaling, synth)
 
 ### Try it yourself
 
-1. Repeat the clustering procedure. How many clusters make sense now?
+**1. Repeat the clustering procedure. How many clusters make sense now?**
 
+:::{class="answer"}
 
-You should notice that 6 clusters seems sensible. We can confirm this by looking at the silhouettes of 6 and 7 clusters. If 6 clusters is best, then by asking for 7 clusters we will likely split one of the clusters artificially, which should result in at least two clusters with poor silhouette widths.
+:::
 
+---
+
+Eight clusters seems sensible. We can confirm this by looking at the silhouettes of 6, 7, and 8 clusters. 
+
+```{r}
+synth.scale |> 
+  kmeans(6, nstart=50) |> 
+  pluck("cluster") |> 
+  cluster::silhouette(dist(synth.scale)) |> 
+  fviz_silhouette(label = T, print.summary = F) 
+
+synth.scale |> 
+  kmeans(7, nstart=50) |> 
+  pluck("cluster") |> 
+  cluster::silhouette(dist(synth.scale)) |> 
+  fviz_silhouette(label = T, print.summary = F) 
+
+synth.scale |> 
+  kmeans(8, nstart=50) |> 
+  pluck("cluster") |> 
+  cluster::silhouette(dist(synth.scale)) |> 
+  fviz_silhouette(label = T, print.summary = F) 
+```
 We can extract the silhouette information by re-fitting using `pam`:
 
 ```{r}
-clust6 <- pam(synth, k=6)
-clust6.sil <- clust6 |> pluck('silinfo', 'widths') |> as_tibble()
+clust8 <- pam(synth, k=8)
+clust8.sil <- clust8 |> pluck('silinfo', 'widths') |> as_tibble()
 ```
 
 ### Try it yourself
 
-1. Create boxplots of the silhouette width by cluster using `clust6.sil`.
+**1. Create boxplots of the silhouette width by cluster using `clust8.sil`.**
 
-2. Repeat this for k=7. You might wish to combine the plots into one by using `bind_rows()` to 
-produce a single plot.
+:::{class="answer"}
 
-3. Look at the results of your preferred clustering by using `augment()` from `broom`
-to append the cluster number to the data. With these data, just doing boxplots for each variable
-by the cluster will be enough to see how clear things are!
+:::
+
+**2. Repeat this for k=7. You might wish to combine the plots into one by using `bind_rows()` to  produce a single plot.**
+
+:::{class="answer"}
+
+:::
+
+**3. Look at the results of your preferred clustering by using `augment()` from `broom` to append the cluster number to the data. With these data, making boxplots and radar plots for each variable by the cluster will be enough to see how clearly separate they are!**
+
+:::{class="answer"}
+
+:::
