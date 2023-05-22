@@ -20,7 +20,7 @@ The techniques we'll cover include:
 
 - Hierarchical clustering
 - k-means clustering
-- Partitioning around Medioids
+- Partitioning around Medoids
 - Silhouette measure
 
 ## The 2020 New Zealand General Election
@@ -162,6 +162,7 @@ party.cl1 |>
   ggradar(legend.position = "none") +
   facet_wrap(~Cluster) 
 ```
+
 We can see that there is one dominant Cluster 3, containing 42 electorates that are hot on National and Act. Cluster 1 is strong for the Greens, Act. Cluster 2 are balanced between Labour, National, and Act. Cluster 4 contains three electorates that are extremely strong for Labour. Cluster 5 is one very Green electorate. Cluster 6 comprises the Maori electorates, which all tend to have a much higher vote for the Maori and Other parties.
 
 Let's look at a Principal Components Analysis plot with the clusters overlaid.
@@ -175,6 +176,7 @@ party |>
   fviz_cluster(data=party, repel=T, labelsize = 6, 
                show.clust.cent = F, ggtheme=theme_bw(), main="")
 ```
+
 Two notes of warning here:
 
 1. The cluster labels may be different when we use a different function (`hcut()` vs `hclust() |> cutree()`).
@@ -307,6 +309,7 @@ synth.scale |>
   cluster::silhouette(dist(synth.scale)) |> 
   fviz_silhouette(label = T, print.summary = F) 
 ```
+
 We can extract the silhouette information by re-fitting using `pam`:
 
 ```{r}

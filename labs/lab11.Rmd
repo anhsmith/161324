@@ -3,6 +3,18 @@ title: 'Workshop 11: Association rule mining'
 output: html_document
 ---
 
+<style>
+.answer {
+  background-color: #d0ebff;
+  padding: 20px;
+}
+
+.answer pre {
+  background-color: #d0ebff;
+}
+</style>
+
+
 In this workshop we'll be looking at association rule mining, or market basket analysis.
 
 ## Going grocery shopping
@@ -36,12 +48,19 @@ The `itemFrequency` function summarises the frequencies of each item across tran
 Groceries |> itemFrequency()
 ```
 
-### Try it yourself
+### Try it youself
 
-1. `itemFrequencyPlot()` can be used to produce a plot of the above frequencies. Explore this function, e.g. you may wish to play with the `support` parameter to limit which items are on the plot.
+**1. `itemFrequencyPlot()` can be used to produce a plot of the above frequencies. Explore this function, e.g. you may wish to play with the `support` parameter to limit which items are on the plot.**
 
-2. Try producing this plot in `ggplot` instead. The `enframe()` function is useful for coercing the output from `itemFrequency()` into a `tibble()` for plotting.
+:::{class="answer"}
+*Put your code and written answers here*
+:::
 
+**2. Try producing this plot in `ggplot` instead. The `enframe()` function is useful for coercing the output from `itemFrequency()` into a `tibble()` for plotting.**
+
+:::{class="answer"}
+
+:::
 
 Let's now mine the association rules using `apriori`:
 
@@ -49,36 +68,54 @@ Let's now mine the association rules using `apriori`:
 groc <- apriori(Groceries, parameter=list(support=0.001, confidence=0.5))
 ```
 
-### Try it yourself
+### Try it youself
 
-1. How many rules are produced?
+**1. How many rules were produced?**
 
-2. Try using `inspectDT()` on `groc` to inspect the rules interactively.
+:::{class="answer"}
 
+:::
 
-We can sort the rules via `sort()`, which can then be inspected by limiting the results with `head()` and then utilising `inspect()`. e.g. to find the top 5 rules by support, we could use:
+**2. Try using `inspectDT()` on `groc` to inspect the rules interactively.**
+
+:::{class="answer"}
+
+:::
+
+We can sort the rules via `sort()`, which can then be inspected by limiting the results with `head()` and then utilising `inspect()`. For example, to find the top 5 rules by support, we could use:
 
 ```{r}
-groc |> sort(by="support") |> head(n=5) |> inspect()
+groc |> sort(by="support") |> head(n=6) |> inspect()
 ```
 
-### Try it yourself
+### Try it youself
 
-1. Considering the top 5 rules by support above, what are your interpretations of their confidence and lift?
+**1. Considering the top 5 rules by support above, what are your interpretations of their confidence and lift?**
 
-2. Find the top 5 rules by confidence or by lift. Again, what are your interpretation of the confidence and lift in each case?
+:::{class="answer"}
 
+:::
 
-We can use the `subset` command to filter rules. e.g. to find rules where the left hand side contains "mustard" we could use:
+**2. Find the top 5 rules by confidence or by lift. Again, what are your interpretation of the confidence and lift in each case?**
+
+:::{class="answer"}
+
+:::
+
+We can use the `subset` command to filter rules, for example, to find rules where the left hand side contains "mustard" we could use:
 
 ```{r}
 groc |> subset(lhs %in% "mustard") |> inspect()
 ```
 
-### Try it yourself
 
-1. Take a look at the rule with mustard in the left hand side that has highest lift. You should notice it has the lowest confidence. Considering the formulas for confidence and lift, explain how this happens.
+### Try it youself
 
+**1. Take a look at the rule with mustard in the left hand side that has highest lift. You should notice it has the lowest confidence. Considering the formulas for confidence and lift, explain how this happens.**
+
+:::{class="answer"}
+
+:::
 
 Both red and white wine are included as separate items in the database. To find all types of wine we could use `%pin%` to partially match items on the left hand side:
 
@@ -86,16 +123,27 @@ Both red and white wine are included as separate items in the database. To find 
 groc |> subset(lhs %pin% "wine") |> inspect()
 ```
 
-### Try it yourself
+### Try it youself
 
 We will investigate itemsets that contain `beer` and `liquor`. Note that some of these will be on the `lhs` and some may be on the `rhs` of the rules.
 
-1. Start by just finding out how many rules contain `beer` on either the left hand side or the right hand side, then repeat this for `liquor`.
+**1. Start by just finding out how many rules contain `beer` on either the left hand side or the right hand side, then repeat this for `liquor`.**
 
-2. If we want both `beer` and `liquor` in the same rule, at most how many do we need to consider based on your ansewr to number 1?
+:::{class="answer"}
 
-3. Consider how you might find these rules directly by combining multiple logical expressions in `subset()`.
+:::
 
+**2. If we want both `beer` and `liquor` in the same rule, at most how many do we need to consider based on your answer to number 1?**
+
+:::{class="answer"}
+
+:::
+
+**3. Consider how you might find these rules directly by combining multiple logical expressions in `subset()`.**
+
+:::{class="answer"}
+
+:::
 
 To find rules that contain multiple items, we can use the `%ain%` operator:
 
@@ -103,63 +151,124 @@ To find rules that contain multiple items, we can use the `%ain%` operator:
 groc |> subset(lhs %ain% c("whole milk", "white bread")) |> inspect()
 ```
 
-### Try it yourself
+### Try it youself
 
-1. Which items are also likely to be purchased if the transaction contains both waffles and candy? Start by finding rules where both waffles and candy are on the left hand side.
+**1. Which items are also likely to be purchased if the transaction contains both waffles and candy? Start by finding rules where both waffles and candy are on the left hand side.**
 
-2. Are waffles or candy ever on the right hand side?
+:::{class="answer"}
 
+:::
+
+**2. Are waffles or candy ever on the right hand side?**
+
+:::{class="answer"}
+
+:::
+
+**3. Examine a graph of the rules in this dataset. You may wish to use some subset of rules, as the graph with all the rules in `groc` is a bit too big and messy.**
+
+```{r}
+plot(groc, method = "graph", engine = "htmlwidget")
+```
+
+:::{class="answer"}
+
+:::
 
 ## Rule mining of bank accounts
 
-This example demonstrates association rule mining in a dataset on bank accounts. The bank data set has over 32,000 rows. Each row of the data set represents a customer-service combination. Therefore, a single customer can have multiple rows in the data set, each row representing one of the services they utilise. The median number of products per customer is three. There are three variables in the data set including `ACCOUNT`(Account Number), `SERVICE`(Type of Service) and `VISIT` (Order of Product Purchase). These data contain information on 7,991 bank customers. There are 13 different services available, and each customer may utilise one or more services. The 13 products (described by the `SERVICE` variable) are represented in the data set using the following abbreviations:
+This part demonstrates association rule mining in bank account data set. The bank data set has over 32,000 rows. Each row of the data set represents a customer-service combination. Therefore, a single customer can have multiple rows in the data set, each row representing one of the products he or she owns. The median number of products per customer is three. There are three variables in the data set including `ACCOUNT`(Account Number), `SERVICE`(Type of Service) and `VISIT` (Order of Product Purchase). These data contain information on 7,991 bank customers. There are 13 different services available, and each customer may utilise one or more services.
+The 13 products (described by the SERVICE variable) are represented in the data set using the following abbreviations:
 
-1. `ATM`: automated teller machine debit card,
-2. `AUTO`: automobile installment loan,
-3. `CCRD`: credit card,
-4. `CD`: certificate of deposit,
-5. `CKCRD`: check/debit card,
-6. `CKING`: checking account,
-7. `HMEQLC`: home equity line of credit,
-8. `IRA`: individual retirement account,
-9. `MMDA`: money market deposit account,
-10. `MTG`: mortgage,
-11. `PLOAN`: personal/consumer installment loan,
-12. `SVG`: saving account,
-13. `TRUST`: personal trust account.
+1. ATM: automated teller machine debit card,
+2. AUTO: automobile installment loan,
+3. CCRD: credit card,
+4. CD: certificate of deposit,
+5. CKCRD: check/debit card,
+6. CKING: checking account,
+7. HMEQLC: home equity line of credit,
+8. IRA: individual retirement account,
+9. MMDA: money market deposit account,
+10. MTG: mortgage,
+11. PLOAN: personal/consumer installment loan, 
+12. SVG: saving account,
+13. TRUST: personal trust account.
 
-The bank is interested on looking at rules that establish which service types are associated with each other so they can advise customers (or upsell!).
-
-We read in the data and convert to a transactions database as follows:
-
-```{r}
-bank <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/bank-rules.csv") |>
-  transactions(format='long', cols=c("ACCOUNT", "SERVICE"))
-```
-
-There are 7,991 bank accounts representing by row and 13 services representing by columns:
+The bank is interested on looking at rules that establish which service types are associated with each other so they can advise customers (or upsell!). 
 
 ```{r}
-bank |> head(n=10) |> DATAFRAME()
+bank <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/bank-rules.csv")
 bank
 ```
 
-Let's now mine the association rules from the bank data set.
+Now, we convert to a transactions database as follows:
 
 ```{r}
-bank_rules <- apriori(bank, parameter=list(support=0.001, confidence=0.5))
+bank <- read_csv("https://www.massey.ac.nz/~jcmarsha/data/bank-rules.csv") |>  
+  transactions(format='long', cols=c("ACCOUNT", "SERVICE"))
 ```
 
-### Try it yourself
+There are 7,991 bank accounts representing by row and 13 services representing by column as follows:
 
-1. How many rules are produced?
+```{r}
+bank |> head(n=100) |> DATAFRAME()
+bank
 
-2. Try using `inspectDT()` sorting by `lift` to assess which rules are important. Which services are utilised?
+```
 
-3. The bank is interested in identifying customers that they can upsell credit cards (`CCRD`) to. Find rules with this on the right hand side, to identify which other services those with credit cards use.
+Let now mine the association rules to the bank data set.
 
-4. The home equity line of credit (`HMEQLC`) is an emergency source of funds that mortgage customers (`MTG`) can borrow at anytime, e.g. if they lose their job or need it for home improvement. The bank is interested in which other services that mortgage customers that take out the home equity line of credit use. Find rules containing both `MTG` and `HMEQLC` to identify these other services.
+```{r}
+bnk <- apriori(bank, parameter=list(support=0.001, confidence=0.5))
+```
 
-5. Find rules identifying the services that customers that take out an automobile service (`AUTO`) utilise.
+### Try it youself
 
-6. Now, Try it yourself, investigate this dataset further. For example, investigate retirement accounts or trust accounts. What rules can you find out? What are the implication of the rules?
+**1. How many rules are produced?**
+
+:::{class="answer"}
+
+:::
+
+**2. Try using `inspectDT()` sorting by `lift` to assess which rules are important. Which services are utilised?**
+
+:::{class="answer"}
+
+:::
+
+**3. The bank is interested in identifying customers to whom they can 'upsell' credit cards (`CCRD`). Find rules with credit card on the right-hand side, to identify which other services are the best predictors of credit card holders.**
+
+:::{class="answer"}
+
+:::
+
+**4. The home equity line of credit (`HMEQLC`) is an emergency source of funds that mortgage customers (`MTG`) can borrow at anytime, for example, if they lose their job or need money for home improvement. The bank is interested in which other services are good predictors of the use of home equity line of credit. Find rules containing both `MTG` and `HMEQLC` to identify these other services.**
+
+:::{class="answer"}
+
+:::
+
+**5. Find rules identifying the services that might predict customers' use of automobile service (`AUTO`).**
+
+:::{class="answer"}
+
+:::
+
+**6. Now, feel free to investigate more about, for example, retirement account or trust account. What rules can you find out? What are the implication of the rules? **
+
+:::{class="answer"}
+
+:::
+
+## Important arguments of subsetting in association rules:
+
+* lhs - means left hand side, or antecedent.
+* rhs - mean right hand side, or consequent.
+* items - items, that make up itemsets.
+* %in% - matches any.
+* %ain% - matches all.
+* %pin% - matches partially.
+* default - no restrictions applied.
+* & - additional restrictions on lift, confidence etc.
+
+
