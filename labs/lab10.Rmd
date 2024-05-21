@@ -158,9 +158,8 @@ party.cl1 |>
   summarise(across(-Electorate, mean), size=n()) |> 
   # make cluster labels with sizes
   mutate(Cluster = paste0("Cluster ", Cluster," (n=",size,")")) |> 
-  select(-size) %>% 
-  ggradar(legend.position = "none") +
-  facet_wrap(~Cluster) 
+  select(-size) |>  
+  ggradar()
 ```
 
 We can see that there is one dominant Cluster 3, containing 42 electorates that are hot on National and Act. Cluster 1 is strong for the Greens, Act. Cluster 2 are balanced between Labour, National, and Act. Cluster 4 contains three electorates that are extremely strong for Labour. Cluster 5 is one very Green electorate. Cluster 6 comprises the Maori electorates, which all tend to have a much higher vote for the Maori and Other parties.
